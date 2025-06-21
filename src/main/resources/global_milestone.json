@@ -1,0 +1,127 @@
+[
+  {
+    "discoveryCount": 100,
+    "items": [
+      {
+        "item": {
+          "material": "DIAMOND",
+          "amount": 5
+        },
+        "experience": 100,
+        "effects": [
+          {
+            "type": "LUCK",
+            "duration": 3600,
+            "amplifier": 2
+          }
+        ]
+      }
+    ],
+    "message": "サーバー全体で100チャンクが発見されました！全プレイヤーにダイヤモンドと幸運の効果を付与！",
+    "sendMessage": true,
+    "broadcast": true,
+    "playEffects": true
+  },
+  {
+    "discoveryCount": 500,
+    "items": [
+      {
+        "item": {
+          "material": "ENCHANTED_GOLDEN_APPLE",
+          "amount": 3
+        },
+        "experience": 250,
+        "effects": [
+          {
+            "type": "HERO_OF_THE_VILLAGE",
+            "duration": 6000,
+            "amplifier": 3
+          }
+        ]
+      }
+    ],
+    "message": "サーバー全体で500チャンクが発見されました！全プレイヤーにエンチャントされた金のリンゴと村の英雄効果を付与！",
+    "sendMessage": true,
+    "broadcast": true,
+    "playEffects": true
+  },
+  {
+    "discoveryCount": 1000,
+    "items": [
+      {
+        "item": {
+          "material": "NETHERITE_INGOT",
+          "amount": 2
+        },
+        "experience": 500,
+        "effects": [
+          {
+            "type": "ABSORPTION",
+            "duration": 12000,
+            "amplifier": 4
+          },
+          {
+            "type": "REGENERATION",
+            "duration": 6000,
+            "amplifier": 3
+          },
+          {
+            "type": "STRENGTH",
+            "duration": 6000,
+            "amplifier": 2
+          }
+        ]
+      }
+    ],
+    "message": "サーバー全体で1000チャンクが発見されました！全プレイヤーにネザライトインゴットと強力な効果セットを付与！",
+    "sendMessage": true,
+    "broadcast": true,
+    "playEffects": true
+  },
+  {
+    "discoveryCount": 2500,
+    "items": [
+      {
+        "item": {
+          "material": "DRAGON_EGG",
+          "amount": 1
+        },
+        "experience": 1000,
+        "effects": [
+          {
+            "type": "GLOWING",
+            "duration": 72000,
+            "amplifier": 0
+          }
+        ]
+      }
+    ],
+    "message": "サーバー全体で2500チャンクが発見されました！全プレイヤーにドラゴンエッグという特別な記念品を付与！",
+    "sendMessage": true,
+    "broadcast": true,
+    "playEffects": true
+  },
+  {
+    "discoveryCount": 5000,
+    "items": [
+      {
+        "item": {
+          "material": "NETHER_STAR",
+          "amount": 3
+        },
+        "experience": 2000,
+        "effects": [
+          {
+            "type": "CONDUIT_POWER",
+            "duration": 24000,
+            "amplifier": 3
+          }
+        ]
+      }
+    ],
+    "message": "サーバー全体で5000チャンクが発見されました！究極の報酬として全プレイヤーにネザースターとコンジットパワーを付与！",
+    "sendMessage": true,
+    "broadcast": true,
+    "playEffects": true
+  }
+]

@@ -1,0 +1,116 @@
+[
+  {
+    "discoveryCount": 5,
+    "items": [
+      {
+        "item": {
+          "material": "COOKED_BEEF",
+          "amount": 10
+        },
+        "experience": 25,
+        "effects": []
+      }
+    ],
+    "message": "5チャンク発見達成！牛肉と経験値を獲得しました！",
+    "sendMessage": true,
+    "broadcast": false,
+    "playEffects": true
+  },
+  {
+    "discoveryCount": 15,
+    "items": [
+      {
+        "item": {
+          "material": "IRON_SWORD",
+          "amount": 1
+        },
+        "experience": 50,
+        "effects": [
+          {
+            "type": "STRENGTH",
+            "duration": 1200,
+            "amplifier": 0
+          }
+        ]
+      }
+    ],
+    "message": "15チャンク発見達成！鉄の剣と力の効果を獲得しました！",
+    "sendMessage": true,
+    "broadcast": true,
+    "playEffects": true
+  },
+  {
+    "discoveryCount": 30,
+    "items": [
+      {
+        "item": {
+          "material": "DIAMOND_PICKAXE",
+          "amount": 1
+        },
+        "experience": 100,
+        "effects": [
+          {
+            "type": "HASTE",
+            "duration": 2400,
+            "amplifier": 1
+          }
+        ]
+      }
+    ],
+    "message": "30チャンク発見達成！ダイヤモンドのツルハシと採掘速度上昇を獲得しました！",
+    "sendMessage": true,
+    "broadcast": true,
+    "playEffects": true
+  },
+  {
+    "discoveryCount": 75,
+    "items": [
+      {
+        "item": {
+          "material": "ENCHANTED_GOLDEN_APPLE",
+          "amount": 2
+        },
+        "experience": 250,
+        "effects": [
+          {
+            "type": "ABSORPTION",
+            "duration": 6000,
+            "amplifier": 3
+          },
+          {
+            "type": "REGENERATION",
+            "duration": 1200,
+            "amplifier": 4
+          }
+        ]
+      }
+    ],
+    "message": "75チャンク発見達成！エンチャントされた金のリンゴと強力な効果を獲得しました！",
+    "sendMessage": true,
+    "broadcast": true,
+    "playEffects": true
+  },
+  {
+    "discoveryCount": 150,
+    "items": [
+      {
+        "item": {
+          "material": "NETHERITE_HELMET",
+          "amount": 1
+        },
+        "experience": 500,
+        "effects": [
+          {
+            "type": "FIRE_RESISTANCE",
+            "duration": 12000,
+            "amplifier": 0
+          }
+        ]
+      }
+    ],
+    "message": "150チャンク発見達成！ネザライトヘルメットと火炎耐性を獲得しました！",
+    "sendMessage": true,
+    "broadcast": true,
+    "playEffects": true
+  }
+]

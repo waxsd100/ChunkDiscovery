@@ -1,0 +1,101 @@
+# ChunkDiscovery プラグイン設定ファイル
+
+# データベース設定
+db:
+  host: "localhost"
+  port: 3306
+  name: "minecraft"
+  user: "minecraft_user"
+  pass: "your_password"
+
+# ワールドボーダー設定
+border:
+  # デフォルト設定（全ワールド共通）
+  initial_size: 100.0  # 初期ボーダーサイズ
+  expansion_per_chunk: 2.0  # チャンク発見1つあたりの拡張量
+
+  # ワールド別個別設定（オプション）
+  worlds:
+    world:  # オーバーワールド
+      initial_size: 200.0
+      expansion_per_chunk: 3.0
+    world_nether:  # ネザー
+      initial_size: 50.0
+      expansion_per_chunk: 1.0
+    world_the_end:  # エンド
+      initial_size: 100.0
+      expansion_per_chunk: 2.0
+
+  # ワールドタイプ別設定（オプション）
+  world_types:
+    overworld:  # オーバーワールド環境
+      initial_size: 150.0
+      expansion_per_chunk: 2.5
+    nether:  # ネザー環境
+      initial_size: 75.0
+      expansion_per_chunk: 1.5
+    end:  # エンド環境
+      initial_size: 100.0
+      expansion_per_chunk: 2.0
+
+# 報酬設定
+rewards:
+  # 世界初発見報酬
+  world_first:
+    item:
+      material: DIAMOND
+      amount: 3
+    experience: 100
+    effects:
+      - type: SPEED
+        duration: 1200  # 60秒（20tick = 1秒）
+        amplifier: 1
+
+  # 個人初発見報酬
+  personal_first:
+    item:
+      material: BREAD
+      amount: 5
+    experience: 10
+    effects:
+      - type: REGENERATION
+        duration: 600  # 30秒
+        amplifier: 0
+
+  # マイルストーン報酬
+  milestones:
+    10:  # 10チャンク発見
+      item:
+        material: IRON_INGOT
+        amount: 5
+      experience: 50
+    25:  # 25チャンク発見
+      item:
+        material: GOLD_INGOT
+        amount: 3
+      experience: 100
+      effects:
+        - type: LUCK
+          duration: 3600  # 3分
+          amplifier: 1
+    50:  # 50チャンク発見
+      item:
+        material: DIAMOND
+        amount: 2
+      experience: 200
+      effects:
+        - type: SPEED
+          duration: 2400  # 2分
+          amplifier: 1
+        - type: JUMP_BOOST
+          duration: 2400
+          amplifier: 1
+    100:  # 100チャンク発見
+      item:
+        material: NETHERITE_INGOT
+        amount: 1
+      experience: 500
+      effects:
+        - type: HERO_OF_THE_VILLAGE
+          duration: 6000  # 5分
+          amplifier: 2
