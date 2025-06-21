@@ -2,9 +2,11 @@
 
 # データベース設定
 db:
+  type: "sqlite"  # "mysql" または "sqlite"
+  # MySQL使用時の設定（type: "mysql" の場合のみ有効）
   host: "localhost"
   port: 3306
-  name: "minecraft"
+  name: "minecraft_chunks"
   user: "minecraft_user"
   pass: "your_password"
 

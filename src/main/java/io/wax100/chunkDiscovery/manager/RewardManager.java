@@ -2,8 +2,7 @@ package io.wax100.chunkDiscovery.manager;
 
 import io.wax100.chunkDiscovery.ChunkDiscoveryPlugin;
 import io.wax100.chunkDiscovery.model.RewardItem;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
@@ -13,11 +12,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 報酬アイテムやマイルストーン設定を管理し、実際の付与を行うクラス
+ * 報酬アイテムやマイルストーン設定を管理し、実際の付与を行うクラス（レガシーAPI対応）
  */
 public class RewardManager {
     private final ChunkDiscoveryPlugin plugin;
-    private final Map<Integer, RewardItem> milestoneRewards = new ConcurrentHashMap<>();
+    private Map<Integer, RewardItem> milestoneRewards = new ConcurrentHashMap<>();
     private RewardItem worldFirstReward;
     private RewardItem personalFirstReward;
 
@@ -97,11 +96,11 @@ public class RewardManager {
         try {
             if (worldFirstReward != null) {
                 giveRewardItem(player, worldFirstReward);
-                player.sendMessage(Component.text("世界初発見報酬を受け取りました！").color(NamedTextColor.GOLD));
+                player.sendMessage(ChatColor.GOLD + "世界初発見報酬を受け取りました！");
             }
         } catch (Exception e) {
             plugin.getLogger().severe("世界初報酬付与中にエラーが発生しました: " + e.getMessage());
-            player.sendMessage(Component.text("報酬の付与中にエラーが発生しました。").color(NamedTextColor.RED));
+            player.sendMessage(ChatColor.RED + "報酬の付与中にエラーが発生しました。");
         }
     }
 
@@ -112,11 +111,11 @@ public class RewardManager {
         try {
             if (personalFirstReward != null) {
                 giveRewardItem(player, personalFirstReward);
-                player.sendMessage(Component.text("個人初発見報酬を受け取りました！").color(NamedTextColor.GREEN));
+                player.sendMessage(ChatColor.GREEN + "個人初発見報酬を受け取りました！");
             }
         } catch (Exception e) {
             plugin.getLogger().severe("個人初報酬付与中にエラーが発生しました: " + e.getMessage());
-            player.sendMessage(Component.text("報酬の付与中にエラーが発生しました。").color(NamedTextColor.RED));
+            player.sendMessage(ChatColor.RED + "報酬の付与中にエラーが発生しました。");
         }
     }
 
@@ -128,11 +127,11 @@ public class RewardManager {
             if (milestoneRewards.containsKey(totalChunks)) {
                 RewardItem reward = milestoneRewards.get(totalChunks);
                 giveRewardItem(player, reward);
-                player.sendMessage(Component.text(totalChunks + " チャンク到達報酬を受け取りました！").color(NamedTextColor.AQUA));
+                player.sendMessage(ChatColor.AQUA + "" + totalChunks + " チャンク到達報酬を受け取りました！");
             }
         } catch (Exception e) {
             plugin.getLogger().severe("マイルストーン報酬付与中にエラーが発生しました: " + e.getMessage());
-            player.sendMessage(Component.text("報酬の付与中にエラーが発生しました。").color(NamedTextColor.RED));
+            player.sendMessage(ChatColor.RED + "報酬の付与中にエラーが発生しました。");
         }
     }
 
@@ -154,7 +153,7 @@ public class RewardManager {
                 // インベントリに空きがない場合の処理
                 if (player.getInventory().firstEmpty() == -1) {
                     player.getWorld().dropItem(player.getLocation(), item);
-                    player.sendMessage(Component.text("インベントリが満杯のため、アイテムを足元にドロップしました。").color(NamedTextColor.YELLOW));
+                    player.sendMessage(ChatColor.YELLOW + "インベントリが満杯のため、アイテムを足元にドロップしました。");
                 } else {
                     player.getInventory().addItem(item);
                 }
@@ -180,7 +179,7 @@ public class RewardManager {
 
         } catch (Exception e) {
             plugin.getLogger().severe("報酬アイテム付与中にエラーが発生しました: " + e.getMessage());
-            player.sendMessage(Component.text("報酬の付与中にエラーが発生しました。").color(NamedTextColor.RED));
+            player.sendMessage(ChatColor.RED + "報酬の付与中にエラーが発生しました。");
         }
     }
 

@@ -5,17 +5,15 @@ import io.wax100.chunkDiscovery.manager.EffectManager;
 import io.wax100.chunkDiscovery.manager.RewardManager;
 import io.wax100.chunkDiscovery.manager.MilestoneConfig;
 import io.wax100.chunkDiscovery.model.RewardItem;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 報酬配布を統括するサービスクラス（グローバルマイルストーン対応）
+ * 報酬配布を統括するサービスクラス（レガシーAPI対応）
  */
 public class RewardService {
     private final ChunkDiscoveryPlugin plugin;
@@ -44,20 +42,17 @@ public class RewardService {
             try {
                 if (globalFirst) {
                     rewardManager.giveWorldFirstRewards(player);
-                    Component message = Component.text("[世界初発見] ")
-                            .color(NamedTextColor.GOLD)
-                            .decorate(TextDecoration.BOLD)
-                            .append(Component.text(player.getName() + " さんが " + totalChunks + " チャンクを世界初発見！")
-                                    .color(NamedTextColor.GOLD));
-                    plugin.getServer().broadcast(message);
+                    String message = ChatColor.GOLD + "" + ChatColor.BOLD + "[世界初発見] " +
+                            ChatColor.GOLD + player.getName() + " さんが " + totalChunks + " チャンクを世界初発見！";
+
+                    // レガシーAPI使用
+                    Bukkit.getServer().broadcastMessage(message);
                     EffectManager.spawnFirework(player.getLocation());
+
                 } else if (personalFirst) {
                     rewardManager.givePersonalRewards(player);
-                    Component message = Component.text("[個人初発見] ")
-                            .color(NamedTextColor.GREEN)
-                            .decorate(TextDecoration.BOLD)
-                            .append(Component.text(totalChunks + " チャンク目を発見して報酬を受け取りました！")
-                                    .color(NamedTextColor.GREEN));
+                    String message = ChatColor.GREEN + "" + ChatColor.BOLD + "[個人初発見] " +
+                            ChatColor.GREEN + totalChunks + " チャンク目を発見して報酬を受け取りました！";
                     player.sendMessage(message);
                     EffectManager.spawnFirework(player.getLocation());
                 }
@@ -67,7 +62,7 @@ public class RewardService {
 
             } catch (Exception e) {
                 plugin.getLogger().severe("報酬付与中にエラーが発生しました: " + e.getMessage());
-                player.sendMessage("§c報酬の付与中にエラーが発生しました。");
+                player.sendMessage(ChatColor.RED + "報酬の付与中にエラーが発生しました。");
             }
         });
     }
@@ -89,14 +84,11 @@ public class RewardService {
                     // メッセージ送信
                     if (milestone.sendMessage && milestone.message != null) {
                         if (milestone.broadcast) {
-                            Component broadcastMsg = Component.text("[マイルストーン達成] ")
-                                    .color(NamedTextColor.YELLOW)
-                                    .decorate(TextDecoration.BOLD)
-                                    .append(Component.text(player.getName() + " さんが " + totalChunks + " チャンク発見を達成！")
-                                            .color(NamedTextColor.YELLOW));
-                            plugin.getServer().broadcast(broadcastMsg);
+                            String broadcastMsg = ChatColor.YELLOW + "" + ChatColor.BOLD + "[マイルストーン達成] " +
+                                    ChatColor.YELLOW + player.getName() + " さんが " + totalChunks + " チャンク発見を達成！";
+                            Bukkit.getServer().broadcastMessage(broadcastMsg);
                         } else {
-                            player.sendMessage(Component.text(milestone.message).color(NamedTextColor.AQUA));
+                            player.sendMessage(ChatColor.AQUA + milestone.message);
                         }
                     }
 
@@ -139,13 +131,10 @@ public class RewardService {
 
                         // グローバルメッセージ送信
                         if (milestone.sendMessage && milestone.message != null) {
-                            Component globalMsg = Component.text("[グローバルマイルストーン達成] ")
-                                    .color(NamedTextColor.GOLD)
-                                    .decorate(TextDecoration.BOLD)
-                                    .append(Component.text("サーバー全体で " + totalDiscoveredChunks + " チャンクが発見されました！")
-                                            .color(NamedTextColor.GOLD));
-                            plugin.getServer().broadcast(globalMsg);
-                            plugin.getServer().broadcast(Component.text(milestone.message).color(NamedTextColor.YELLOW));
+                            String globalMsg = ChatColor.GOLD + "" + ChatColor.BOLD + "[グローバルマイルストーン達成] " +
+                                    ChatColor.GOLD + "サーバー全体で " + totalDiscoveredChunks + " チャンクが発見されました！";
+                            Bukkit.getServer().broadcastMessage(globalMsg);
+                            Bukkit.getServer().broadcastMessage(ChatColor.YELLOW + milestone.message);
                         }
 
                         // 全プレイヤーにエフェクト

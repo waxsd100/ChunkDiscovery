@@ -22,9 +22,15 @@ dependencies {
     // Paper API
     compileOnly 'io.papermc.paper:paper-api:1.20.1-R0.1-SNAPSHOT'
 
-    // HikariCP / MySQL ドライバを fatJar に含める
+    // HikariCP / データベースドライバを fatJar に含める
     implementation 'com.zaxxer:HikariCP:5.0.1'
-    implementation 'mysql:mysql-connector-java:8.0.33'
+
+    // MySQLとSQLite両方対応
+    implementation 'mysql:mysql-connector-java:8.0.33'      // MySQL用
+    implementation 'org.xerial:sqlite-jdbc:3.44.1.0'        // SQLite用
+
+    // GSonを明示的に追加（マイルストーンJSONのため）
+    implementation 'com.google.code.gson:gson:2.10.1'
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -35,9 +41,28 @@ tasks.withType(JavaCompile).configureEach {
 // ShadowJar 設定
 shadowJar {
     archiveClassifier.set('')
+    // 依存関係をリロケート
     relocate 'com.zaxxer.hikari', 'io.wax100.chunkdiscovery.lib.hikari'
-    relocate 'org.slf4j',         'io.wax100.chunkdiscovery.lib.slf4j'
+    relocate 'org.slf4j', 'io.wax100.chunkdiscovery.lib.slf4j'
+    relocate 'com.mysql', 'io.wax100.chunkdiscovery.lib.mysql'
+    relocate 'org.xerial', 'io.wax100.chunkdiscovery.lib.sqlite'
+    relocate 'com.google.gson', 'io.wax100.chunkdiscovery.lib.gson'
+
+    // 除外するファイル（不要なメタデータ）
+    exclude 'META-INF/DEPENDENCIES'
+    exclude 'META-INF/LICENSE*'
+    exclude 'META-INF/NOTICE*'
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+
+    // JARファイル名の最終設定
+    archiveBaseName.set('chunk-discovery-plugin')
+    archiveVersion.set(project.version.toString())
 }
+
+// デフォルトでshadowJarを実行
+build.dependsOn shadowJar
 
 processResources {
     filesMatching('plugin.yml') {

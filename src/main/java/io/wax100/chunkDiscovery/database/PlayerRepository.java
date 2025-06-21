@@ -77,6 +77,26 @@ public class PlayerRepository {
         }
     }
 
+    /**
+     * 特定ワールドでのプレイヤーのチャンク発見数を取得
+     * @param playerId プレイヤーのUUID
+     * @param worldName ワールド名
+     * @return そのワールドでの発見数
+     */
+    public int getPlayerChunksInWorld(String playerId, String worldName) {
+        String sql = "SELECT COUNT(*) as chunk_count FROM player_chunks WHERE player_id = ? AND world = ?";
+        try (Connection conn = ds.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, playerId);
+            ps.setString(2, worldName);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt("chunk_count") : 0;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("ワールド別チャンク数取得中にエラーが発生しました", e);
+        }
+    }
+
     public List<PlayerData> getTopPlayers(int limit) {
         String sql = "SELECT player_id, total_chunks FROM players ORDER BY total_chunks DESC LIMIT ?";
         List<PlayerData> list = new ArrayList<>();

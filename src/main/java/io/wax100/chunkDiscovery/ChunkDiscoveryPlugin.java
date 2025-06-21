@@ -16,6 +16,9 @@ import io.wax100.chunkDiscovery.config.WorldBorderConfig;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.World;
 
+import java.io.File;
+import java.io.FileWriter;
+
 public class ChunkDiscoveryPlugin extends JavaPlugin {
 
     private DiscoveryService discoveryService;
@@ -35,28 +38,48 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
                 return;
             }
 
-            // JSON をコピー
-            saveResource("milestones.json", false);
-            saveResource("global_milestones.json", false);
+            // JSON をコピー（エラーハンドリング付き）
+            try {
+                saveResource("milestones.json", false);
+            } catch (IllegalArgumentException e) {
+                getLogger().warning("milestones.json リソースが見つかりません。デフォルトファイルを作成します。");
+                createDefaultMilestonesJson();
+            }
 
-            // ワールドボーダー設定の初期化
-            WorldBorderConfig.init(this);
+            try {
+                saveResource("global_milestones.json", false);
+            } catch (IllegalArgumentException e) {
+                getLogger().warning("global_milestones.json リソースが見つかりません。デフォルトファイルを作成します。");
+                createDefaultGlobalMilestonesJson();
+            }
 
             // DB 初期化（テーブル生成も含む）
             try {
-                DatabaseManager.init(
-                        getConfig().getString("db.host"),
-                        getConfig().getInt("db.port"),
-                        getConfig().getString("db.name"),
-                        getConfig().getString("db.user"),
-                        getConfig().getString("db.pass")
-                );
-                getLogger().info("データベース接続が確立されました。");
+                String dbType = getConfig().getString("db.type", "sqlite").toLowerCase();
+
+                if ("mysql".equals(dbType)) {
+                    // MySQL使用
+                    DatabaseManager.init(
+                            getConfig().getString("db.host"),
+                            getConfig().getInt("db.port"),
+                            getConfig().getString("db.name"),
+                            getConfig().getString("db.user"),
+                            getConfig().getString("db.pass")
+                    );
+                    getLogger().info("MySQL データベース接続が確立されました。");
+                } else {
+                    // SQLite使用（デフォルト）
+                    DatabaseManager.initSQLite(getDataFolder());
+                    getLogger().info("SQLite データベースを初期化しました。");
+                }
             } catch (Exception e) {
                 getLogger().severe("データベース初期化に失敗しました: " + e.getMessage());
                 getServer().getPluginManager().disablePlugin(this);
                 return;
             }
+
+            // ワールドボーダー設定の初期化（DB復元機能付き）
+            WorldBorderConfig.init(this);
 
             // マイルストーン JSON をロード
             try {
@@ -110,10 +133,12 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
     }
 
     /**
-     * 設定ファイルをリロードする
+     * 設定ファイルをリロードする（ボーダーサイズ保持機能付き）
      */
     public void reloadPluginConfig() {
         try {
+            getLogger().info("設定をリロードしています...");
+
             reloadConfig();
 
             if (!validateConfig()) {
@@ -121,11 +146,16 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
                 return;
             }
 
-            WorldBorderConfig.init(this);
+            // ワールドボーダー設定をリロード（DBから復元）
+            WorldBorderConfig.reloadSettings();
+
+            // マイルストーン設定をリロード
             MilestoneConfig.init(getDataFolder().toPath());
+
+            // 報酬設定をリロード
             rewardService.reloadRewards();
 
-            getLogger().info("設定ファイルがリロードされました。");
+            getLogger().info("設定ファイルがリロードされました。ワールドボーダーサイズは保持されています。");
         } catch (Exception e) {
             getLogger().severe("設定リロード中にエラーが発生しました: " + e.getMessage());
         }
@@ -150,37 +180,93 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
                 return false;
             }
 
-            // DB設定のチェック
-            String host = getConfig().getString("db.host");
-            int port = getConfig().getInt("db.port", 3306);
-            String dbName = getConfig().getString("db.name");
-            String user = getConfig().getString("db.user");
-            String pass = getConfig().getString("db.pass");
+            // DB設定のチェック（MySQL使用時のみ）
+            String dbType = getConfig().getString("db.type", "sqlite").toLowerCase();
+            if ("mysql".equals(dbType)) {
+                String host = getConfig().getString("db.host");
+                int port = getConfig().getInt("db.port", 3306);
+                String dbName = getConfig().getString("db.name");
+                String user = getConfig().getString("db.user");
 
-            if (host == null || host.trim().isEmpty()) {
-                getLogger().severe("db.host が設定されていません。");
-                return false;
-            }
+                if (host == null || host.trim().isEmpty()) {
+                    getLogger().severe("db.host が設定されていません。");
+                    return false;
+                }
 
-            if (port < 1 || port > 65535) {
-                getLogger().severe("db.port は 1 以上 65535 以下である必要があります: " + port);
-                return false;
-            }
+                if (port < 1 || port > 65535) {
+                    getLogger().severe("db.port は 1 以上 65535 以下である必要があります: " + port);
+                    return false;
+                }
 
-            if (dbName == null || dbName.trim().isEmpty()) {
-                getLogger().severe("db.name が設定されていません。");
-                return false;
-            }
+                if (dbName == null || dbName.trim().isEmpty()) {
+                    getLogger().severe("db.name が設定されていません。");
+                    return false;
+                }
 
-            if (user == null || user.trim().isEmpty()) {
-                getLogger().severe("db.user が設定されていません。");
-                return false;
+                if (user == null || user.trim().isEmpty()) {
+                    getLogger().severe("db.user が設定されていません。");
+                    return false;
+                }
             }
 
             return true;
         } catch (Exception e) {
             getLogger().severe("設定バリデーション中にエラーが発生しました: " + e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * デフォルトのmilestones.jsonファイルを作成
+     */
+    private void createDefaultMilestonesJson() {
+        try {
+            File file = new File(getDataFolder(), "milestones.json");
+            if (!file.exists()) {
+                getDataFolder().mkdirs();
+                try (FileWriter writer = new FileWriter(file)) {
+                    writer.write("[\n");
+                    writer.write("  {\n");
+                    writer.write("    \"discoveryCount\": 10,\n");
+                    writer.write("    \"items\": [],\n");
+                    writer.write("    \"message\": \"10チャンク発見達成！\",\n");
+                    writer.write("    \"sendMessage\": true,\n");
+                    writer.write("    \"broadcast\": false,\n");
+                    writer.write("    \"playEffects\": true\n");
+                    writer.write("  }\n");
+                    writer.write("]\n");
+                }
+                getLogger().info("デフォルトのmilestones.jsonを作成しました。");
+            }
+        } catch (Exception e) {
+            getLogger().warning("デフォルトmilestones.json作成に失敗しました: " + e.getMessage());
+        }
+    }
+
+    /**
+     * デフォルトのglobal_milestones.jsonファイルを作成
+     */
+    private void createDefaultGlobalMilestonesJson() {
+        try {
+            File file = new File(getDataFolder(), "global_milestones.json");
+            if (!file.exists()) {
+                getDataFolder().mkdirs();
+                try (FileWriter writer = new FileWriter(file)) {
+                    writer.write("[\n");
+                    writer.write("  {\n");
+                    writer.write("    \"discoveryCount\": 100,\n");
+                    writer.write("    \"items\": [],\n");
+                    writer.write("    \"message\": \"サーバー全体で100チャンクが発見されました！\",\n");
+                    writer.write("    \"sendMessage\": true,\n");
+                    writer.write("    \"broadcast\": true,\n");
+                    writer.write("    \"playEffects\": true\n");
+                    writer.write("  }\n");
+                    writer.write("]\n");
+                }
+                getLogger().info("デフォルトのglobal_milestones.jsonを作成しました。");
+            }
+        } catch (Exception e) {
+            getLogger().warning("デフォルトglobal_milestones.json作成に失敗しました: " + e.getMessage());
         }
     }
 

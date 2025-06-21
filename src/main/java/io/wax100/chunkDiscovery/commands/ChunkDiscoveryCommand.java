@@ -3,9 +3,8 @@ package io.wax100.chunkDiscovery.commands;
 import io.wax100.chunkDiscovery.ChunkDiscoveryPlugin;
 import io.wax100.chunkDiscovery.service.DiscoveryService;
 import io.wax100.chunkDiscovery.model.PlayerData;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -28,7 +27,7 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(Component.text("Usage: /chunkdiscovery [stats|top|info|check|reload]").color(NamedTextColor.YELLOW));
+            sender.sendMessage(ChatColor.YELLOW + "Usage: /chunkdiscovery [stats|top|info|check|reload]");
             return true;
         }
 
@@ -52,12 +51,12 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
                     handleReloadCommand(sender);
                     break;
                 default:
-                    sender.sendMessage(Component.text("Unknown subcommand: " + sub).color(NamedTextColor.RED));
-                    sender.sendMessage(Component.text("Available commands: stats, top, info, check, reload").color(NamedTextColor.YELLOW));
+                    sender.sendMessage(ChatColor.RED + "Unknown subcommand: " + sub);
+                    sender.sendMessage(ChatColor.YELLOW + "Available commands: stats, top, info, check, reload");
             }
         } catch (Exception e) {
             plugin.getLogger().severe("コマンド実行中にエラーが発生しました: " + e.getMessage());
-            sender.sendMessage(Component.text("コマンドの実行中にエラーが発生しました。").color(NamedTextColor.RED));
+            sender.sendMessage(ChatColor.RED + "コマンドの実行中にエラーが発生しました。");
         }
 
         return true;
@@ -65,7 +64,7 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
 
     private void handleStatsCommand(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(Component.text("このコマンドはプレイヤーのみ実行可能です。").color(NamedTextColor.RED));
+            sender.sendMessage(ChatColor.RED + "このコマンドはプレイヤーのみ実行可能です。");
             return;
         }
 
@@ -76,7 +75,7 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
             // 他のプレイヤーの統計を表示
             Player targetPlayer = Bukkit.getPlayer(args[1]);
             if (targetPlayer == null) {
-                player.sendMessage(Component.text("プレイヤー " + args[1] + " が見つかりません。").color(NamedTextColor.RED));
+                player.sendMessage(ChatColor.RED + "プレイヤー " + args[1] + " が見つかりません。");
                 return;
             }
             targetPlayerId = targetPlayer.getUniqueId().toString();
@@ -90,8 +89,7 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
         // 非同期で統計を取得
         discoveryService.getPlayerTotalChunksAsync(targetPlayerId).thenAccept(total -> {
             Bukkit.getScheduler().runTask(plugin, () -> {
-                Component message = Component.text(targetPlayerName + " のチャンク発見数: " + total)
-                        .color(NamedTextColor.GREEN);
+                String message = ChatColor.GREEN + targetPlayerName + " のチャンク発見数: " + total;
                 player.sendMessage(message);
             });
         });
@@ -104,7 +102,7 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
                 limit = Integer.parseInt(args[1]);
                 limit = Math.max(1, Math.min(limit, 50)); // 1-50の範囲に制限
             } catch (NumberFormatException e) {
-                sender.sendMessage(Component.text("無効な数値です: " + args[1]).color(NamedTextColor.RED));
+                sender.sendMessage(ChatColor.RED + "無効な数値です: " + args[1]);
                 return;
             }
         }
@@ -114,19 +112,17 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
         // 非同期でランキングを取得
         discoveryService.getTopPlayersAsync(finalLimit).thenAccept(topPlayers -> {
             Bukkit.getScheduler().runTask(plugin, () -> {
-                sender.sendMessage(Component.text("=== Top " + finalLimit + " チャンク発見者 ===").color(NamedTextColor.GOLD));
+                sender.sendMessage(ChatColor.GOLD + "=== Top " + finalLimit + " チャンク発見者 ===");
 
                 if (topPlayers.isEmpty()) {
-                    sender.sendMessage(Component.text("まだチャンクを発見したプレイヤーがいません。").color(NamedTextColor.GRAY));
+                    sender.sendMessage(ChatColor.GRAY + "まだチャンクを発見したプレイヤーがいません。");
                     return;
                 }
 
                 for (int i = 0; i < topPlayers.size(); i++) {
                     PlayerData pd = topPlayers.get(i);
-                    Component rankMessage = Component.text((i + 1) + ". ")
-                            .color(NamedTextColor.YELLOW)
-                            .append(Component.text(getPlayerNameFromId(pd.getPlayerId()) + " - " + pd.getTotalChunks())
-                                    .color(NamedTextColor.WHITE));
+                    String rankMessage = ChatColor.YELLOW + "" + (i + 1) + ". " +
+                            ChatColor.WHITE + getPlayerNameFromId(pd.getPlayerId()) + " - " + pd.getTotalChunks();
                     sender.sendMessage(rankMessage);
                 }
             });
@@ -134,18 +130,18 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleInfoCommand(CommandSender sender) {
-        sender.sendMessage(Component.text("=== ChunkDiscovery Plugin 情報 ===").color(NamedTextColor.AQUA));
-        sender.sendMessage(Component.text("バージョン: " + plugin.getDescription().getVersion()).color(NamedTextColor.WHITE));
-        sender.sendMessage(Component.text("作者: " + plugin.getDescription().getAuthors().get(0)).color(NamedTextColor.WHITE));
+        sender.sendMessage(ChatColor.AQUA + "=== ChunkDiscovery Plugin 情報 ===");
+        sender.sendMessage(ChatColor.WHITE + "バージョン: " + plugin.getDescription().getVersion());
+        sender.sendMessage(ChatColor.WHITE + "作者: " + plugin.getDescription().getAuthors().get(0));
 
         // キャッシュ統計情報
         int cacheSize = plugin.getChunkCache().getCacheSize();
-        sender.sendMessage(Component.text("チャンクキャッシュサイズ: " + cacheSize).color(NamedTextColor.WHITE));
+        sender.sendMessage(ChatColor.WHITE + "チャンクキャッシュサイズ: " + cacheSize);
     }
 
     private void handleCheckCommand(CommandSender sender) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(Component.text("このコマンドはプレイヤーのみ実行可能です。").color(NamedTextColor.RED));
+            sender.sendMessage(ChatColor.RED + "このコマンドはプレイヤーのみ実行可能です。");
             return;
         }
 
@@ -153,13 +149,13 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
         boolean isValid = discoveryService.isValidDiscoveryChunk(player.getLocation().getChunk());
         boolean isDiscovered = discoveryService.isDiscovered(player, player.getLocation().getChunk());
 
-        Component validMessage = Component.text("現在のチャンクは")
-                .append(Component.text(isValid ? "有効" : "無効").color(isValid ? NamedTextColor.GREEN : NamedTextColor.RED))
-                .append(Component.text("な発見対象です。"));
+        String validMessage = "現在のチャンクは" +
+                (isValid ? ChatColor.GREEN + "有効" : ChatColor.RED + "無効") +
+                ChatColor.WHITE + "な発見対象です。";
 
-        Component discoveredMessage = Component.text("このチャンクは")
-                .append(Component.text(isDiscovered ? "既に発見済み" : "未発見").color(isDiscovered ? NamedTextColor.YELLOW : NamedTextColor.GREEN))
-                .append(Component.text("です。"));
+        String discoveredMessage = "このチャンクは" +
+                (isDiscovered ? ChatColor.YELLOW + "既に発見済み" : ChatColor.GREEN + "未発見") +
+                ChatColor.WHITE + "です。";
 
         player.sendMessage(validMessage);
         player.sendMessage(discoveredMessage);
@@ -167,18 +163,18 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
 
     private void handleReloadCommand(CommandSender sender) {
         if (!sender.hasPermission("chunkdiscovery.reload")) {
-            sender.sendMessage(Component.text("このコマンドを実行する権限がありません。").color(NamedTextColor.RED));
+            sender.sendMessage(ChatColor.RED + "このコマンドを実行する権限がありません。");
             return;
         }
 
-        sender.sendMessage(Component.text("設定をリロードしています...").color(NamedTextColor.YELLOW));
+        sender.sendMessage(ChatColor.YELLOW + "設定をリロードしています...");
 
         try {
             plugin.reloadPluginConfig();
-            sender.sendMessage(Component.text("設定のリロードが完了しました。").color(NamedTextColor.GREEN));
+            sender.sendMessage(ChatColor.GREEN + "設定のリロードが完了しました。");
         } catch (Exception e) {
             plugin.getLogger().severe("設定リロード中にエラーが発生しました: " + e.getMessage());
-            sender.sendMessage(Component.text("設定のリロード中にエラーが発生しました。").color(NamedTextColor.RED));
+            sender.sendMessage(ChatColor.RED + "設定のリロード中にエラーが発生しました。");
         }
     }
 

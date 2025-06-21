@@ -1,6 +1,8 @@
 package io.wax100.chunkDiscovery.config;
 
 import io.wax100.chunkDiscovery.ChunkDiscoveryPlugin;
+import io.wax100.chunkDiscovery.database.WorldBorderRepository;
+import io.wax100.chunkDiscovery.database.DatabaseManager;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 
@@ -8,17 +10,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * ワールド別のボーダー設定を管理するクラス
+ * ワールド別のボーダー設定を管理するクラス（DB永続化対応）
  */
 public class WorldBorderConfig {
-    private static final Map<String, WorldBorderSetting> worldSettings = new HashMap<>();
+    private static Map<String, WorldBorderSetting> worldSettings = new HashMap<>();
     private static WorldBorderSetting defaultSetting;
     private static ChunkDiscoveryPlugin plugin;
+    private static WorldBorderRepository borderRepository;
 
     public static void init(ChunkDiscoveryPlugin pluginInstance) {
         plugin = pluginInstance;
+        borderRepository = new WorldBorderRepository(DatabaseManager.getDataSource());
         loadSettings();
-        applyInitialBorders();
+        applyBordersFromDatabase();
     }
 
     private static void loadSettings() {
@@ -76,26 +80,108 @@ public class WorldBorderConfig {
         };
     }
 
+    /**
+     * データベースから保存されたボーダーサイズを復元
+     */
+    private static void applyBordersFromDatabase() {
+        try {
+            Map<String, Double> savedBorders = borderRepository.getAllBorderSizes();
+
+            for (World world : plugin.getServer().getWorlds()) {
+                String worldName = world.getName();
+                Double savedSize = savedBorders.get(worldName);
+
+                if (savedSize != null) {
+                    // 保存されたサイズがある場合は復元
+                    world.getWorldBorder().setSize(savedSize);
+                    plugin.getLogger().info("ワールド " + worldName + " のボーダーサイズを復元しました: " + savedSize);
+                } else {
+                    // 保存されたサイズがない場合は初期サイズを設定してDBに保存
+                    WorldBorderSetting setting = getSettingForWorld(worldName);
+                    world.getWorldBorder().setSize(setting.initialSize());
+                    borderRepository.initializeBorderIfAbsent(worldName, setting.initialSize());
+                    plugin.getLogger().info("ワールド " + worldName + " のボーダーサイズを初期化しました: " + setting.initialSize());
+                }
+            }
+        } catch (Exception e) {
+            plugin.getLogger().severe("データベースからのボーダーサイズ復元中にエラーが発生しました: " + e.getMessage());
+            // エラー時は設定ファイルの初期値を適用
+            applyInitialBorders();
+        }
+    }
+
+    /**
+     * 設定ファイルの初期値でボーダーを設定（フォールバック用）
+     */
     private static void applyInitialBorders() {
         for (World world : plugin.getServer().getWorlds()) {
             WorldBorderSetting setting = getSettingForWorld(world.getName());
             world.getWorldBorder().setSize(setting.initialSize());
-            plugin.getLogger().info("ワールド " + world.getName() + " のボーダーサイズを " + setting.initialSize() + " に設定しました。");
+            plugin.getLogger().info("ワールド " + world.getName() + " のボーダーサイズを設定ファイルから設定しました: " + setting.initialSize());
         }
     }
 
+    /**
+     * チャンク発見に応じて新しいボーダーサイズを計算
+     * @param world 対象ワールド
+     * @param totalChunks そのワールドでの発見済みチャンク総数
+     * @return 新しいボーダーサイズ
+     */
     public static double calculateNewSize(World world, int totalChunks) {
         WorldBorderSetting setting = getSettingForWorld(world.getName());
         return setting.initialSize() + (totalChunks * setting.expansionPerChunk());
+    }
+
+    /**
+     * ワールドボーダーサイズを更新してDBに保存
+     * @param world 対象ワールド
+     * @param newSize 新しいボーダーサイズ
+     * @param totalChunks 発見済みチャンク総数
+     */
+    public static void updateBorderSize(World world, double newSize, int totalChunks) {
+        try {
+            // ワールドボーダーを更新
+            world.getWorldBorder().setSize(newSize);
+
+            // データベースに保存
+            borderRepository.saveBorderSize(world.getName(), newSize, totalChunks);
+
+            plugin.getLogger().fine("ワールド " + world.getName() + " のボーダーサイズを更新しました: " + newSize + " (チャンク数: " + totalChunks + ")");
+        } catch (Exception e) {
+            plugin.getLogger().severe("ボーダーサイズ更新中にエラーが発生しました: " + e.getMessage());
+        }
+    }
+
+    /**
+     * ワールドの現在のボーダーサイズをDBから取得
+     * @param worldName ワールド名
+     * @return 保存されたボーダーサイズ（存在しない場合は設定ファイルの初期値）
+     */
+    public static double getCurrentBorderSize(String worldName) {
+        try {
+            Double savedSize = borderRepository.getBorderSize(worldName);
+            if (savedSize != null) {
+                return savedSize;
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("ボーダーサイズ取得中にエラーが発生しました: " + e.getMessage());
+        }
+
+        // フォールバック：設定ファイルの初期値を返す
+        WorldBorderSetting setting = getSettingForWorld(worldName);
+        return setting.initialSize();
     }
 
     public static WorldBorderSetting getSettingForWorld(String worldName) {
         return worldSettings.getOrDefault(worldName, defaultSetting);
     }
 
+    /**
+     * 設定とDBからのボーダー復元
+     */
     public static void reloadSettings() {
         loadSettings();
-        applyInitialBorders();
+        applyBordersFromDatabase();
     }
 
     /**

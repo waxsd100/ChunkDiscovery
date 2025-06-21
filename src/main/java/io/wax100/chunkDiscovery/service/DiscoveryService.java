@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * プレイヤーのチャンク発見処理を担当するサービスクラス（非同期対応）
+ * プレイヤーのチャンク発見処理を担当するサービスクラス（DB保存対応）
  */
 public class DiscoveryService {
     private final PlayerRepository playerRepo;
@@ -38,7 +38,7 @@ public class DiscoveryService {
     }
 
     /**
-     * チャンク発見時の処理（非同期対応）
+     * チャンク発見時の処理（非同期対応・DB保存対応）
      */
     public void handleDiscovery(Player player, Chunk chunk) {
         String pid = player.getUniqueId().toString();
@@ -69,9 +69,9 @@ public class DiscoveryService {
                 if (result.personalFirst && result.playerData != null) {
                     int total = result.playerData.getTotalChunks();
 
-                    // ワールドボーダー拡張
+                    // ワールドボーダー拡張（DBに保存）
                     double newSize = WorldBorderConfig.calculateNewSize(player.getWorld(), total);
-                    player.getWorld().getWorldBorder().setSize(newSize);
+                    WorldBorderConfig.updateBorderSize(player.getWorld(), newSize, total);
 
                     // 報酬付与
                     rewardService.grantRewards(player, result.globalFirst, result.personalFirst, total);
@@ -177,6 +177,21 @@ public class DiscoveryService {
             return chunkRepo.getTotalDiscoveredChunks();
         } catch (Exception e) {
             plugin.getLogger().severe("グローバル統計取得中にエラーが発生しました: " + e.getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * 特定ワールドでのプレイヤーのチャンク発見総数を取得
+     * @param playerId プレイヤーID
+     * @param worldName ワールド名
+     * @return そのワールドでの発見数
+     */
+    public int getPlayerChunksInWorld(String playerId, String worldName) {
+        try {
+            return playerRepo.getPlayerChunksInWorld(playerId, worldName);
+        } catch (Exception e) {
+            plugin.getLogger().severe("ワールド別プレイヤー統計取得中にエラーが発生しました: " + e.getMessage());
             return 0;
         }
     }
