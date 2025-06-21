@@ -1,0 +1,46 @@
+plugins {
+    id 'java-library'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'xyz.jpenilla.run-paper' version '2.0.1'
+}
+
+group = 'io.wax100'
+version = '1.0-SNAPSHOT'
+description = 'ChunkDiscoveryPlugin'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    // repositories は settings.gradle で統一管理しているので空でも OK
+}
+
+dependencies {
+    // Paper API
+    compileOnly 'io.papermc.paper:paper-api:1.20.1-R0.1-SNAPSHOT'
+
+    // HikariCP / MySQL ドライバを fatJar に含める
+    implementation 'com.zaxxer:HikariCP:5.0.1'
+    implementation 'mysql:mysql-connector-java:8.0.33'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release.set(17)
+}
+
+// ShadowJar 設定
+shadowJar {
+    archiveClassifier.set('')
+    relocate 'com.zaxxer.hikari', 'io.wax100.chunkdiscovery.lib.hikari'
+    relocate 'org.slf4j',         'io.wax100.chunkdiscovery.lib.slf4j'
+}
+
+processResources {
+    filesMatching('plugin.yml') {
+        expand(version: project.version, apiVersion: '1.20')
+    }
+}

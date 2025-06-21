@@ -1,0 +1,12 @@
+name: ChunkDiscovery
+version: '1.0-SNAPSHOT'
+main: io.wax100.chunkDiscovery.ChunkDiscoveryPlugin
+api-version: '1.20'
+author: wakokara
+description: World Borderをチャンク探索に合わせて拡張するプラグイン
+
+commands:
+  chunkdiscovery:
+    description: チャンク発見プラグインのコマンド
+    usage: /chunkdiscovery [stats|top|info|check]
+    aliases: [cd]
