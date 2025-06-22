@@ -4,6 +4,7 @@ import io.wax100.chunkDiscovery.service.DiscoveryService;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -54,6 +55,11 @@ public class ChunkDiscoveryListener implements Listener {
 
             // 岩盤じゃないので発見対象外(ENDは必ず失敗する)
             if (!isValidChunkChunk(player)) {
+                return;
+            }
+
+            // チャンクの岩盤チェック
+            if (!checkBedrockAtBottom(toChunk)) {
                 return;
             }
 
@@ -129,5 +135,25 @@ public class ChunkDiscoveryListener implements Listener {
                 return true;
             }
         }
+    }
+
+    /**
+     * 実際のチャンク検証を行う
+     */
+    private boolean checkBedrockAtBottom(Chunk chunk) {
+        World world = chunk.getWorld();
+        int minY = world.getMinHeight();
+        int baseX = chunk.getX() << 4;
+        int baseZ = chunk.getZ() << 4;
+
+        for (int dx = 0; dx < 16; dx++) {
+            for (int dz = 0; dz < 16; dz++) {
+                Block block = world.getBlockAt(baseX + dx, minY, baseZ + dz);
+                if (block.getType() != Material.BEDROCK) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
