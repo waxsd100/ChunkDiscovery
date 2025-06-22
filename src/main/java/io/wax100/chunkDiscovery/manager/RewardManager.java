@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RewardManager {
     private final ChunkDiscoveryPlugin plugin;
-    private Map<Integer, RewardItem> milestoneRewards = new ConcurrentHashMap<>();
+    private final Map<Integer, RewardItem> milestoneRewards = new ConcurrentHashMap<>();
     private RewardItem worldFirstReward;
     private RewardItem personalFirstReward;
 

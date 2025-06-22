@@ -13,7 +13,7 @@ import java.util.Map;
  * ワールド別のボーダー設定を管理するクラス（DB永続化対応）
  */
 public class WorldBorderConfig {
-    private static Map<String, WorldBorderSetting> worldSettings = new HashMap<>();
+    private static final Map<String, WorldBorderSetting> worldSettings = new HashMap<>();
     private static WorldBorderSetting defaultSetting;
     private static ChunkDiscoveryPlugin plugin;
     private static WorldBorderRepository borderRepository;

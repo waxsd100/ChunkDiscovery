@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * ワールドボーダーサイズをデータベースで管理するリポジトリクラス
+ * ワールドボーダーサイズをデータベースで管理するリポジトリクラス（MySQL専用）
  */
 public class WorldBorderRepository {
     private final DataSource ds;
@@ -25,9 +25,12 @@ public class WorldBorderRepository {
      * @param totalChunks 発見済みチャンク総数
      */
     public void saveBorderSize(String worldName, double borderSize, int totalChunks) {
-        // SQLite/MySQL両対応のクエリ
-        String sql = "INSERT OR REPLACE INTO world_borders(world_name, border_size, total_chunks_discovered) " +
-                "VALUES(?, ?, ?)";
+        String sql = "INSERT INTO world_borders(world_name, border_size, total_chunks_discovered) " +
+                "VALUES(?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE " +
+                "border_size = VALUES(border_size), " +
+                "total_chunks_discovered = VALUES(total_chunks_discovered), " +
+                "last_update = CURRENT_TIMESTAMP";
 
         try (Connection conn = ds.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -36,24 +39,7 @@ public class WorldBorderRepository {
             ps.setInt(3, totalChunks);
             ps.executeUpdate();
         } catch (SQLException e) {
-            // SQLiteで失敗した場合はMySQLの構文で再試行
-            try {
-                String mysqlSql = "INSERT INTO world_borders(world_name, border_size, total_chunks_discovered) " +
-                        "VALUES(?, ?, ?) " +
-                        "ON DUPLICATE KEY UPDATE " +
-                        "border_size = VALUES(border_size), " +
-                        "total_chunks_discovered = VALUES(total_chunks_discovered)";
-
-                try (Connection conn = ds.getConnection();
-                     PreparedStatement ps = conn.prepareStatement(mysqlSql)) {
-                    ps.setString(1, worldName);
-                    ps.setDouble(2, borderSize);
-                    ps.setInt(3, totalChunks);
-                    ps.executeUpdate();
-                }
-            } catch (SQLException e2) {
-                throw new RuntimeException("ワールドボーダーサイズ保存中にエラーが発生しました", e2);
-            }
+            throw new RuntimeException("ワールドボーダーサイズ保存中にエラーが発生しました", e);
         }
     }
 

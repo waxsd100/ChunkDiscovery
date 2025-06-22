@@ -53,25 +53,16 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
                 createDefaultGlobalMilestonesJson();
             }
 
-            // DB 初期化（テーブル生成も含む）
+            // MySQL DB 初期化（テーブル生成も含む）
             try {
-                String dbType = getConfig().getString("db.type", "sqlite").toLowerCase();
-
-                if ("mysql".equals(dbType)) {
-                    // MySQL使用
-                    DatabaseManager.init(
-                            getConfig().getString("db.host"),
-                            getConfig().getInt("db.port"),
-                            getConfig().getString("db.name"),
-                            getConfig().getString("db.user"),
-                            getConfig().getString("db.pass")
-                    );
-                    getLogger().info("MySQL データベース接続が確立されました。");
-                } else {
-                    // SQLite使用（デフォルト）
-                    DatabaseManager.initSQLite(getDataFolder());
-                    getLogger().info("SQLite データベースを初期化しました。");
-                }
+                DatabaseManager.init(
+                        getConfig().getString("db.host"),
+                        getConfig().getInt("db.port"),
+                        getConfig().getString("db.name"),
+                        getConfig().getString("db.user"),
+                        getConfig().getString("db.pass")
+                );
+                getLogger().info("MySQL データベース接続が確立されました。");
             } catch (Exception e) {
                 getLogger().severe("データベース初期化に失敗しました: " + e.getMessage());
                 getServer().getPluginManager().disablePlugin(this);
@@ -180,33 +171,30 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
                 return false;
             }
 
-            // DB設定のチェック（MySQL使用時のみ）
-            String dbType = getConfig().getString("db.type", "sqlite").toLowerCase();
-            if ("mysql".equals(dbType)) {
-                String host = getConfig().getString("db.host");
-                int port = getConfig().getInt("db.port", 3306);
-                String dbName = getConfig().getString("db.name");
-                String user = getConfig().getString("db.user");
+            // MySQL DB設定のチェック
+            String host = getConfig().getString("db.host");
+            int port = getConfig().getInt("db.port", 3306);
+            String dbName = getConfig().getString("db.name");
+            String user = getConfig().getString("db.user");
 
-                if (host == null || host.trim().isEmpty()) {
-                    getLogger().severe("db.host が設定されていません。");
-                    return false;
-                }
+            if (host == null || host.trim().isEmpty()) {
+                getLogger().severe("db.host が設定されていません。");
+                return false;
+            }
 
-                if (port < 1 || port > 65535) {
-                    getLogger().severe("db.port は 1 以上 65535 以下である必要があります: " + port);
-                    return false;
-                }
+            if (port < 1 || port > 65535) {
+                getLogger().severe("db.port は 1 以上 65535 以下である必要があります: " + port);
+                return false;
+            }
 
-                if (dbName == null || dbName.trim().isEmpty()) {
-                    getLogger().severe("db.name が設定されていません。");
-                    return false;
-                }
+            if (dbName == null || dbName.trim().isEmpty()) {
+                getLogger().severe("db.name が設定されていません。");
+                return false;
+            }
 
-                if (user == null || user.trim().isEmpty()) {
-                    getLogger().severe("db.user が設定されていません。");
-                    return false;
-                }
+            if (user == null || user.trim().isEmpty()) {
+                getLogger().severe("db.user が設定されていません。");
+                return false;
             }
 
             return true;

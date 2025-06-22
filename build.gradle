@@ -22,12 +22,9 @@ dependencies {
     // Paper API
     compileOnly 'io.papermc.paper:paper-api:1.20.1-R0.1-SNAPSHOT'
 
-    // HikariCP / データベースドライバを fatJar に含める
+    // HikariCP / MySQL ドライバを fatJar に含める
     implementation 'com.zaxxer:HikariCP:5.0.1'
-
-    // MySQLとSQLite両方対応
-    implementation 'mysql:mysql-connector-java:8.0.33'      // MySQL用
-    implementation 'org.xerial:sqlite-jdbc:3.44.1.0'        // SQLite用
+    implementation 'mysql:mysql-connector-java:8.0.33'
 
     // GSonを明示的に追加（マイルストーンJSONのため）
     implementation 'com.google.code.gson:gson:2.10.1'
@@ -45,7 +42,6 @@ shadowJar {
     relocate 'com.zaxxer.hikari', 'io.wax100.chunkdiscovery.lib.hikari'
     relocate 'org.slf4j', 'io.wax100.chunkdiscovery.lib.slf4j'
     relocate 'com.mysql', 'io.wax100.chunkdiscovery.lib.mysql'
-    relocate 'org.xerial', 'io.wax100.chunkdiscovery.lib.sqlite'
     relocate 'com.google.gson', 'io.wax100.chunkdiscovery.lib.gson'
 
     // 除外するファイル（不要なメタデータ）

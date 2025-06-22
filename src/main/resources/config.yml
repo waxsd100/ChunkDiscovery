@@ -1,9 +1,7 @@
 # ChunkDiscovery プラグイン設定ファイル
 
-# データベース設定
+# データベース設定（MySQL専用）
 db:
-  type: "sqlite"  # "mysql" または "sqlite"
-  # MySQL使用時の設定（type: "mysql" の場合のみ有効）
   host: "localhost"
   port: 3306
   name: "minecraft_chunks"
