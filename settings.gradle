@@ -17,4 +17,4 @@ dependencyResolutionManagement {
     }
 }
 // settings.gradle
-rootProject.name = 'chunk-discovery-plugin'
+rootProject.name = 'ChunkDiscovery'

@@ -143,12 +143,10 @@ public class ChunkDiscoveryListener implements Listener {
     private boolean checkBedrockAtBottom(Chunk chunk) {
         World world = chunk.getWorld();
         int minY = world.getMinHeight();
-        int baseX = chunk.getX() << 4;
-        int baseZ = chunk.getZ() << 4;
 
         for (int dx = 0; dx < 16; dx++) {
             for (int dz = 0; dz < 16; dz++) {
-                Block block = world.getBlockAt(baseX + dx, minY, baseZ + dz);
+                Block block = chunk.getBlock(dx, minY, dz);
                 if (block.getType() != Material.BEDROCK) {
                     return false;
                 }
