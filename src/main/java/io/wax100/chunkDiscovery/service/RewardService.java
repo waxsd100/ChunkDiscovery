@@ -44,12 +44,12 @@ public class RewardService {
                     rewardManager.giveWorldFirstRewards(player);
                     EffectManager.celebrateMilestone(player.getLocation());
                     // 世界初発見メッセージ
-                    String message = ChatColor.WHITE + "" + ChatColor.BOLD + player.getName() + " さんが " + ChatColor.LIGHT_PURPLE + totalChunks + " 目のチャンクを世界初発見！";
+                    String message = ChatColor.WHITE + "" + ChatColor.BOLD + player.getName() + " さんが " + ChatColor.LIGHT_PURPLE + totalChunks + " 番目のチャンクを世界初発見！";
                     Bukkit.getServer().broadcastMessage(message);
                 } else if (personalFirst) {
                     rewardManager.givePersonalRewards(player);
                     EffectManager.spawnFirework(player.getLocation());
-                    String message = ChatColor.GREEN + "" + ChatColor.BOLD + totalChunks + " チャンク目を発見して報酬を受け取りました！";
+                    String message = ChatColor.GREEN + "" + ChatColor.BOLD + totalChunks + " チャンクを発見して報酬を受け取りました！";
                     player.sendMessage(message);
                 }
 

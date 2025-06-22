@@ -67,8 +67,8 @@ public class EffectManager {
                 1.5, 1.5, 1.5,                 // spread x,y,z
                 0.05                           // speed
         );
-
-        world.playSound(loc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 1.0f);
+        // TODO うるさいのでどうにかする
+//        world.playSound(loc, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 1.0f);
 
         for (int i = 0; i < 5; i++) {
             // 少しだけ横にずらして配置
