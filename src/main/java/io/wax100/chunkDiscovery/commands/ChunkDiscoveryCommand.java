@@ -5,6 +5,9 @@ import io.wax100.chunkDiscovery.service.DiscoveryService;
 import io.wax100.chunkDiscovery.model.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -133,10 +136,6 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.AQUA + "=== ChunkDiscovery Plugin 情報 ===");
         sender.sendMessage(ChatColor.WHITE + "バージョン: " + plugin.getDescription().getVersion());
         sender.sendMessage(ChatColor.WHITE + "作者: " + plugin.getDescription().getAuthors().get(0));
-
-        // キャッシュ統計情報
-        int cacheSize = plugin.getChunkCache().getCacheSize();
-        sender.sendMessage(ChatColor.WHITE + "チャンクキャッシュサイズ: " + cacheSize);
     }
 
     private void handleCheckCommand(CommandSender sender) {
@@ -145,20 +144,38 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        // 現在のチャンクの有効性をチェック
-        boolean isValid = discoveryService.isValidDiscoveryChunk(player.getLocation().getChunk());
-        boolean isDiscovered = discoveryService.isDiscovered(player, player.getLocation().getChunk());
+        // 現在のチャンクの有効性をリアルタイムチェック
+        World world = player.getWorld();
+        boolean isValid;
 
-        String validMessage = "現在のチャンクは" +
-                (isValid ? ChatColor.GREEN + "有効" : ChatColor.RED + "無効") +
-                ChatColor.WHITE + "な発見対象です。";
+        if (world.getEnvironment() == World.Environment.THE_END) {
+            isValid = true;
+            player.sendMessage(ChatColor.GREEN + "Endワールドは常に有効な発見対象です。");
+        } else {
+            // プレイヤーの足元の岩盤チェック
+            int playerX = player.getLocation().getBlockX();
+            int playerZ = player.getLocation().getBlockZ();
+            int minY = world.getMinHeight();
+            Block bedrockBlock = world.getBlockAt(playerX, minY, playerZ);
+            isValid = bedrockBlock.getType() == Material.BEDROCK;
+
+            String validMessage = "足元の最下層（Y=" + minY + "）は" +
+                    (isValid ? ChatColor.GREEN + "岩盤" : ChatColor.RED + bedrockBlock.getType().name()) +
+                    ChatColor.WHITE + "です。";
+            player.sendMessage(validMessage);
+        }
+
+        boolean isDiscovered = discoveryService.isDiscovered(player, player.getLocation().getChunk());
 
         String discoveredMessage = "このチャンクは" +
                 (isDiscovered ? ChatColor.YELLOW + "既に発見済み" : ChatColor.GREEN + "未発見") +
                 ChatColor.WHITE + "です。";
 
-        player.sendMessage(validMessage);
         player.sendMessage(discoveredMessage);
+
+        if (isValid && !isDiscovered) {
+            player.sendMessage(ChatColor.AQUA + "このチャンクは発見可能です！");
+        }
     }
 
     private void handleReloadCommand(CommandSender sender) {

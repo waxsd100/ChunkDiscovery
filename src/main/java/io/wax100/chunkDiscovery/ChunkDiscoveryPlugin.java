@@ -11,7 +11,6 @@ import io.wax100.chunkDiscovery.manager.EffectManager;
 import io.wax100.chunkDiscovery.manager.RewardManager;
 import io.wax100.chunkDiscovery.listener.ChunkDiscoveryListener;
 import io.wax100.chunkDiscovery.commands.ChunkDiscoveryCommand;
-import io.wax100.chunkDiscovery.util.ChunkValidationCache;
 import io.wax100.chunkDiscovery.config.WorldBorderConfig;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.World;
@@ -23,7 +22,6 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
 
     private DiscoveryService discoveryService;
     private RewardService rewardService;
-    private ChunkValidationCache chunkCache;
 
     @Override
     public void onEnable() {
@@ -80,16 +78,12 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
                 getLogger().warning("マイルストーン設定の読み込みに失敗しました: " + e.getMessage());
             }
 
-            // キャッシュ初期化
-            chunkCache = new ChunkValidationCache();
-
-            // サービス初期化
+            // サービス初期化（キャッシュ削除）
             rewardService = new RewardService(this);
             discoveryService = new DiscoveryService(
                     new PlayerRepository(DatabaseManager.getDataSource()),
                     new ChunkRepository(DatabaseManager.getDataSource()),
                     rewardService,
-                    chunkCache,
                     this
             );
 
@@ -113,9 +107,6 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         try {
-            if (chunkCache != null) {
-                chunkCache.clearCache();
-            }
             DatabaseManager.shutdown();
             getLogger().info("ChunkDiscoveryPlugin が正常に無効化されました。");
         } catch (Exception e) {
@@ -264,9 +255,5 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
 
     public RewardService getRewardService() {
         return rewardService;
-    }
-
-    public ChunkValidationCache getChunkCache() {
-        return chunkCache;
     }
 }

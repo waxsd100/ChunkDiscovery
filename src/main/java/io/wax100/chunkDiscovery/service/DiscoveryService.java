@@ -4,7 +4,6 @@ import io.wax100.chunkDiscovery.ChunkDiscoveryPlugin;
 import io.wax100.chunkDiscovery.database.PlayerRepository;
 import io.wax100.chunkDiscovery.database.ChunkRepository;
 import io.wax100.chunkDiscovery.model.PlayerData;
-import io.wax100.chunkDiscovery.util.ChunkValidationCache;
 import io.wax100.chunkDiscovery.config.WorldBorderConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -14,26 +13,23 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * プレイヤーのチャンク発見処理を担当するサービスクラス（DB保存対応）
+ * プレイヤーのチャンク発見処理を担当するサービスクラス（簡素化版）
  */
 public class DiscoveryService {
     private final PlayerRepository playerRepo;
     private final ChunkRepository chunkRepo;
     private final RewardService rewardService;
-    private final ChunkValidationCache chunkCache;
     private final ChunkDiscoveryPlugin plugin;
 
     public DiscoveryService(
             PlayerRepository playerRepo,
             ChunkRepository chunkRepo,
             RewardService rewardService,
-            ChunkValidationCache chunkCache,
             ChunkDiscoveryPlugin plugin
     ) {
         this.playerRepo = playerRepo;
         this.chunkRepo = chunkRepo;
         this.rewardService = rewardService;
-        this.chunkCache = chunkCache;
         this.plugin = plugin;
     }
 
@@ -74,15 +70,12 @@ public class DiscoveryService {
                     WorldBorderConfig.updateBorderSize(player.getWorld(), newSize, total);
 
                     // 報酬付与
-                    rewardService.grantRewards(player, result.globalFirst, result.personalFirst, total);
+                    rewardService.grantRewards(player, result.globalFirst, true, total);
 
                     // グローバルマイルストーンチェック
                     if (result.globalFirst) {
                         rewardService.checkGlobalMilestones(getTotalDiscoveredChunks());
                     }
-                } else {
-                    // 既に発見済みの場合
-                    player.sendMessage("§7このチャンクは既に発見済みです。");
                 }
             } catch (Exception e) {
                 plugin.getLogger().severe("チャンク発見結果処理中にエラーが発生しました: " + e.getMessage());
@@ -160,13 +153,6 @@ public class DiscoveryService {
             plugin.getLogger().warning("チャンク発見状況確認中にエラーが発生しました: " + e.getMessage());
             return false; // エラー時は未発見として扱う
         }
-    }
-
-    /**
-     * 指定したチャンクが有効な発見対象かチェック
-     */
-    public boolean isValidDiscoveryChunk(Chunk chunk) {
-        return chunkCache.hasBedrockAtBottom(chunk);
     }
 
     /**

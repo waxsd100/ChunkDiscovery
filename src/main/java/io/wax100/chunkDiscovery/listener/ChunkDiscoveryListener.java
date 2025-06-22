@@ -2,6 +2,8 @@ package io.wax100.chunkDiscovery.listener;
 
 import io.wax100.chunkDiscovery.service.DiscoveryService;
 import org.bukkit.Chunk;
+import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -17,7 +19,7 @@ public class ChunkDiscoveryListener implements Listener {
 
     private final DiscoveryService discoveryService;
 
-    // プレイヤーの最後のチャンク位置をキャッシュして、同一チャンク内移動を効率的に除外
+    // プレイヤーの最後のチャンク位置をキャッシュ
     private final Map<UUID, ChunkPosition> lastChunkPositions = new ConcurrentHashMap<>();
 
     public ChunkDiscoveryListener(DiscoveryService discoveryService) {
@@ -30,7 +32,7 @@ public class ChunkDiscoveryListener implements Listener {
             Player player = e.getPlayer();
             Chunk toChunk = e.getTo().getChunk();
 
-            // 同じチャンク内の移動かチェック（最適化）
+            // 同じチャンク内の移動は無視
             ChunkPosition currentPos = new ChunkPosition(
                     toChunk.getWorld().getName(),
                     toChunk.getX(),
@@ -39,33 +41,36 @@ public class ChunkDiscoveryListener implements Listener {
 
             ChunkPosition lastPos = lastChunkPositions.get(player.getUniqueId());
             if (currentPos.equals(lastPos)) {
-                return; // 同じチャンク内移動なので処理しない
+                return;
             }
 
             // 位置を更新
             lastChunkPositions.put(player.getUniqueId(), currentPos);
 
-            // すでに発見済みなら即時リターン
+            // 既に発見済みなら無視
             if (discoveryService.isDiscovered(player, toChunk)) {
                 return;
             }
 
-            // 下層に完全に岩盤があるチャンクだけを"発見対象"とする（キャッシュ使用）
-            if (!discoveryService.isValidDiscoveryChunk(toChunk)) {
-                return;
+            // 足元の-64が岩盤かチェック（Endは岩盤チェックスキップ）
+            World world = player.getWorld();
+            if (world.getEnvironment() != World.Environment.THE_END) {
+                // プレイヤーの足元Y=-64のブロックが岩盤かチェック
+                int playerX = player.getLocation().getBlockX();
+                int playerZ = player.getLocation().getBlockZ();
+                int minY = world.getMinHeight();
+
+                if (world.getBlockAt(playerX, minY, playerZ).getType() != Material.BEDROCK) {
+                    return; // 岩盤じゃないので発見対象外
+                }
             }
 
-            // 発見処理（非同期）
+            // 発見処理
             discoveryService.handleDiscovery(player, toChunk);
 
         } catch (Exception ex) {
-            // エラーが発生してもプレイヤーの移動を妨げないようにする
-            // ログにエラーを記録
-            if (discoveryService != null) {
-                // DiscoveryServiceからプラグインインスタンスを取得してログ出力
-                System.err.println("チャンク発見処理中にエラーが発生しました: " + ex.getMessage());
-                ex.printStackTrace();
-            }
+            // エラーでもプレイヤーの移動を妨げない
+            System.err.println("チャンク発見処理中にエラー: " + ex.getMessage());
         }
     }
 
@@ -85,12 +90,11 @@ public class ChunkDiscoveryListener implements Listener {
 
     @EventHandler
     public void onPlayerQuit(org.bukkit.event.player.PlayerQuitEvent e) {
-        // プレイヤーがログアウトした際にキャッシュをクリア（メモリリーク防止）
         lastChunkPositions.remove(e.getPlayer().getUniqueId());
     }
 
     /**
-     * チャンク位置を表すレコードクラス
+     * チャンク位置
      */
     private record ChunkPosition(String worldName, int x, int z) {
         @Override
