@@ -13,6 +13,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.util.Objects;
 
 public class ChunkDiscoveryPlugin extends JavaPlugin {
 
@@ -87,7 +88,7 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(
                     new ChunkDiscoveryListener(discoveryService), this
             );
-            getCommand("chunkdiscovery").setExecutor(
+            Objects.requireNonNull(getCommand("chunkdiscovery")).setExecutor(
                     new ChunkDiscoveryCommand(discoveryService, this)
             );
 

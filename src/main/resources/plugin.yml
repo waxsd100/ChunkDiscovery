@@ -8,5 +8,5 @@ description: World Borderをチャンク探索に合わせて拡張するプラ�
 commands:
   chunkdiscovery:
     description: チャンク発見プラグインのコマンド
-    usage: /chunkdiscovery [stats|top|info|check]
+    usage: /chunkdiscovery [stats|top|info|check|reload|world]
     aliases: [cd]

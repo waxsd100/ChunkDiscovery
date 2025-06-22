@@ -52,17 +52,9 @@ public class ChunkDiscoveryListener implements Listener {
                 return;
             }
 
-            // 足元の-64が岩盤かチェック（Endは岩盤チェックスキップ）
-            World world = player.getWorld();
-            if (world.getEnvironment() != World.Environment.THE_END) {
-                // プレイヤーの足元Y=-64のブロックが岩盤かチェック
-                int playerX = player.getLocation().getBlockX();
-                int playerZ = player.getLocation().getBlockZ();
-                int minY = world.getMinHeight();
-
-                if (world.getBlockAt(playerX, minY, playerZ).getType() != Material.BEDROCK) {
-                    return; // 岩盤じゃないので発見対象外
-                }
+            // 岩盤じゃないので発見対象外(ENDは必ず失敗する)
+            if (!isValidChunkChunk(player)) {
+                return;
             }
 
             // 発見処理
@@ -109,6 +101,33 @@ public class ChunkDiscoveryListener implements Listener {
         @Override
         public int hashCode() {
             return java.util.Objects.hash(worldName, x, z);
+        }
+    }
+
+    /**
+     * チャンクが有効な発見対象かどうかをチェック
+     * - NORMAL: Y=-64の岩盤チェック
+     * - NETHER: Y=0の岩盤チェック
+     * - THE_END: 岩盤チェックはスキップ
+     */
+    private boolean isValidChunkChunk(Player player) {
+        World world = player.getWorld();
+        int x = player.getLocation().getBlockX();
+        int minY = world.getMinHeight();
+        int z = player.getLocation().getBlockZ();
+
+        switch (world.getEnvironment()) {
+            case NORMAL, NETHER -> {
+                return world.getBlockAt(x, minY, z).getType() == Material.BEDROCK;
+            }
+            case THE_END -> {
+                // エンドでは岩盤チェックは行わない
+                return false;
+            }
+            default -> {
+                // 他の環境は無視
+                return true;
+            }
         }
     }
 }

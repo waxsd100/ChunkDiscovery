@@ -42,19 +42,15 @@ public class RewardService {
             try {
                 if (globalFirst) {
                     rewardManager.giveWorldFirstRewards(player);
-                    String message = ChatColor.GOLD + "" + ChatColor.BOLD + "[世界初発見] " +
-                            ChatColor.GOLD + player.getName() + " さんが " + totalChunks + " チャンクを世界初発見！";
-
-                    // レガシーAPI使用
+                    EffectManager.celebrateMilestone(player.getLocation());
+                    // 世界初発見メッセージ
+                    String message = ChatColor.WHITE + "" + ChatColor.BOLD + player.getName() + " さんが " + ChatColor.LIGHT_PURPLE + totalChunks + " 目のチャンクを世界初発見！";
                     Bukkit.getServer().broadcastMessage(message);
-                    EffectManager.spawnFirework(player.getLocation());
-
                 } else if (personalFirst) {
                     rewardManager.givePersonalRewards(player);
-                    String message = ChatColor.GREEN + "" + ChatColor.BOLD + "[個人初発見] " +
-                            ChatColor.GREEN + totalChunks + " チャンク目を発見して報酬を受け取りました！";
-                    player.sendMessage(message);
                     EffectManager.spawnFirework(player.getLocation());
+                    String message = ChatColor.GREEN + "" + ChatColor.BOLD + totalChunks + " チャンク目を発見して報酬を受け取りました！";
+                    player.sendMessage(message);
                 }
 
                 // 個人マイルストーンチェック

@@ -17,13 +17,13 @@ border:
   # ワールドタイプ別設定（環境タイプで指定）
   world_types:
     overworld:  # オーバーワールド環境（Environment.NORMAL）
-      initial_size: 300.0
+      initial_size: 16.0
       expansion_per_chunk: 4.0
     nether:     # ネザー環境（Environment.NETHER）
-      initial_size: 75.0
-      expansion_per_chunk: 1.5
+      initial_size: 32.0
+      expansion_per_chunk: 16
     end:        # エンド環境（Environment.THE_END）
-      initial_size: 150.0
+      initial_size: 60000.0
       expansion_per_chunk: 2.0
 
 # 報酬設定（全ワールド共通）
@@ -42,7 +42,7 @@ rewards:
   # 個人初発見報酬
   personal_first:
     item:
-      material: BREAD
+      material: EMERALD
       amount: 5
     experience: 10
     effects:
@@ -57,7 +57,6 @@ rewards:
         material: IRON_INGOT
         amount: 5
       experience: 50
-
     25:  # 25チャンク発見
       item:
         material: GOLD_INGOT
@@ -67,7 +66,6 @@ rewards:
         - type: LUCK
           duration: 3600  # 3分
           amplifier: 1
-
     50:  # 50チャンク発見
       item:
         material: DIAMOND
@@ -80,7 +78,6 @@ rewards:
         - type: JUMP_BOOST
           duration: 2400
           amplifier: 1
-
     100:  # 100チャンク発見
       item:
         material: NETHERITE_INGOT
@@ -90,3 +87,12 @@ rewards:
         - type: HERO_OF_THE_VILLAGE
           duration: 6000  # 5分
           amplifier: 2
+    1000:  # 100チャンク発見
+      item:
+        material: END_PORTAL_FRAME
+        amount: 12
+      experience: 5000
+      effects:
+        - type: HERO_OF_THE_VILLAGE
+          duration: 6000  # 5分
+          amplifier: 5
