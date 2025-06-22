@@ -10,35 +10,23 @@ db:
 
 # ワールドボーダー設定
 border:
-  # デフォルト設定（全ワールド共通）
+  # デフォルト設定（未設定のワールド用）
   initial_size: 100.0  # 初期ボーダーサイズ
   expansion_per_chunk: 2.0  # チャンク発見1つあたりの拡張量
 
-  # ワールド別個別設定（オプション）
-  worlds:
-    world:  # オーバーワールド
-      initial_size: 200.0
-      expansion_per_chunk: 3.0
-    world_nether:  # ネザー
-      initial_size: 50.0
-      expansion_per_chunk: 1.0
-    world_the_end:  # エンド
-      initial_size: 100.0
-      expansion_per_chunk: 2.0
-
-  # ワールドタイプ別設定（オプション）
+  # ワールドタイプ別設定（環境タイプで指定）
   world_types:
-    overworld:  # オーバーワールド環境
-      initial_size: 150.0
-      expansion_per_chunk: 2.5
-    nether:  # ネザー環境
+    overworld:  # オーバーワールド環境（Environment.NORMAL）
+      initial_size: 300.0
+      expansion_per_chunk: 4.0
+    nether:     # ネザー環境（Environment.NETHER）
       initial_size: 75.0
       expansion_per_chunk: 1.5
-    end:  # エンド環境
-      initial_size: 100.0
+    end:        # エンド環境（Environment.THE_END）
+      initial_size: 150.0
       expansion_per_chunk: 2.0
 
-# 報酬設定
+# 報酬設定（全ワールド共通）
 rewards:
   # 世界初発見報酬
   world_first:
@@ -48,7 +36,7 @@ rewards:
     experience: 100
     effects:
       - type: SPEED
-        duration: 1200  # 60秒（20tick = 1秒）
+        duration: 1200  # 60秒
         amplifier: 1
 
   # 個人初発見報酬
@@ -62,13 +50,14 @@ rewards:
         duration: 600  # 30秒
         amplifier: 0
 
-  # マイルストーン報酬
+  # マイルストーン報酬（全体の発見数に基づく）
   milestones:
-    10:  # 10チャンク発見
+    10:  # 10チャンク発見（全ワールド合計）
       item:
         material: IRON_INGOT
         amount: 5
       experience: 50
+
     25:  # 25チャンク発見
       item:
         material: GOLD_INGOT
@@ -78,6 +67,7 @@ rewards:
         - type: LUCK
           duration: 3600  # 3分
           amplifier: 1
+
     50:  # 50チャンク発見
       item:
         material: DIAMOND
@@ -90,6 +80,7 @@ rewards:
         - type: JUMP_BOOST
           duration: 2400
           amplifier: 1
+
     100:  # 100チャンク発見
       item:
         material: NETHERITE_INGOT

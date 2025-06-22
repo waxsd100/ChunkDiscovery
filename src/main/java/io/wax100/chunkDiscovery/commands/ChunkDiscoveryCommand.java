@@ -3,16 +3,15 @@ package io.wax100.chunkDiscovery.commands;
 import io.wax100.chunkDiscovery.ChunkDiscoveryPlugin;
 import io.wax100.chunkDiscovery.service.DiscoveryService;
 import io.wax100.chunkDiscovery.model.PlayerData;
+import io.wax100.chunkDiscovery.config.WorldBorderConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.generator.WorldInfo;
 
 import java.util.Arrays;
 import java.util.List;
@@ -30,7 +29,7 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(ChatColor.YELLOW + "Usage: /chunkdiscovery [stats|top|info|check|reload]");
+            sender.sendMessage(ChatColor.YELLOW + "Usage: /chunkdiscovery [stats|top|info|check|reload|world]");
             return true;
         }
 
@@ -53,9 +52,12 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
                 case "reload":
                     handleReloadCommand(sender);
                     break;
+                case "world":
+                    handleWorldCommand(sender, args);
+                    break;
                 default:
                     sender.sendMessage(ChatColor.RED + "Unknown subcommand: " + sub);
-                    sender.sendMessage(ChatColor.YELLOW + "Available commands: stats, top, info, check, reload");
+                    sender.sendMessage(ChatColor.YELLOW + "Available commands: stats, top, info, check, reload, world");
             }
         } catch (Exception e) {
             plugin.getLogger().severe("コマンド実行中にエラーが発生しました: " + e.getMessage());
@@ -91,9 +93,63 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
 
         // 非同期で統計を取得
         discoveryService.getPlayerTotalChunksAsync(targetPlayerId).thenAccept(total -> {
+            // 現在のワールドでの統計も取得
+            String currentWorld = player.getWorld().getName();
+            discoveryService.getPlayerWorldChunksAsync(targetPlayerId, currentWorld).thenAccept(worldTotal -> {
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    player.sendMessage(ChatColor.GREEN + "=== " + targetPlayerName + " の統計 ===");
+                    player.sendMessage(ChatColor.WHITE + "全体発見数: " + ChatColor.YELLOW + total);
+                    player.sendMessage(ChatColor.WHITE + currentWorld + "での発見数: " + ChatColor.AQUA + worldTotal);
+
+                    // 現在のワールドボーダーサイズも表示
+                    double currentBorderSize = WorldBorderConfig.getCurrentBorderSize(currentWorld);
+                    player.sendMessage(ChatColor.WHITE + currentWorld + "のボーダーサイズ: " + ChatColor.GOLD + String.format("%.1f", currentBorderSize));
+                });
+            });
+        });
+    }
+
+    private void handleWorldCommand(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(ChatColor.RED + "このコマンドはプレイヤーのみ実行可能です。");
+            return;
+        }
+
+        if (args.length < 2) {
+            player.sendMessage(ChatColor.YELLOW + "Usage: /chunkdiscovery world <ワールド名>");
+            player.sendMessage(ChatColor.GRAY + "利用可能なワールド: " +
+                    Bukkit.getWorlds().stream().map(WorldInfo::getName).collect(Collectors.joining(", ")));
+            return;
+        }
+
+        String worldName = args[1];
+        if (Bukkit.getWorld(worldName) == null) {
+            player.sendMessage(ChatColor.RED + "ワールド '" + worldName + "' が見つかりません。");
+            return;
+        }
+
+        String playerId = player.getUniqueId().toString();
+
+        // 指定されたワールドでの統計を表示
+        discoveryService.getPlayerWorldChunksAsync(playerId, worldName).thenAccept(worldTotal -> {
             Bukkit.getScheduler().runTask(plugin, () -> {
-                String message = ChatColor.GREEN + targetPlayerName + " のチャンク発見数: " + total;
-                player.sendMessage(message);
+                player.sendMessage(ChatColor.GREEN + "=== " + worldName + " での統計 ===");
+                player.sendMessage(ChatColor.WHITE + "あなたの発見数: " + ChatColor.AQUA + worldTotal);
+
+                // ワールドボーダー情報
+                double currentBorderSize = WorldBorderConfig.getCurrentBorderSize(worldName);
+                WorldBorderConfig.WorldBorderSetting setting = WorldBorderConfig.getSettingForWorld(worldName);
+
+                player.sendMessage(ChatColor.WHITE + "現在のボーダーサイズ: " + ChatColor.GOLD + String.format("%.1f", currentBorderSize));
+                player.sendMessage(ChatColor.WHITE + "初期サイズ: " + ChatColor.GRAY + setting.initialSize());
+                player.sendMessage(ChatColor.WHITE + "チャンクあたりの拡張: " + ChatColor.GRAY + setting.expansionPerChunk());
+
+                // 次のマイルストーンまでの距離を計算
+                int nextMilestone = getNextMilestone(worldTotal);
+                if (nextMilestone > 0) {
+                    int remaining = nextMilestone - worldTotal;
+                    player.sendMessage(ChatColor.WHITE + "次のマイルストーンまで: " + ChatColor.YELLOW + remaining + " チャンク");
+                }
             });
         });
     }
@@ -125,7 +181,8 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
                 for (int i = 0; i < topPlayers.size(); i++) {
                     PlayerData pd = topPlayers.get(i);
                     String rankMessage = ChatColor.YELLOW + "" + (i + 1) + ". " +
-                            ChatColor.WHITE + getPlayerNameFromId(pd.getPlayerId()) + " - " + pd.getTotalChunks();
+                            ChatColor.WHITE + getPlayerNameFromId(pd.getPlayerId()) + " - " +
+                            ChatColor.AQUA + pd.getTotalChunks() + " チャンク";
                     sender.sendMessage(rankMessage);
                 }
             });
@@ -144,38 +201,18 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        // 現在のチャンクの有効性をリアルタイムチェック
-        World world = player.getWorld();
-        boolean isValid;
-
-        if (world.getEnvironment() == World.Environment.THE_END) {
-            isValid = true;
-            player.sendMessage(ChatColor.GREEN + "Endワールドは常に有効な発見対象です。");
-        } else {
-            // プレイヤーの足元の岩盤チェック
-            int playerX = player.getLocation().getBlockX();
-            int playerZ = player.getLocation().getBlockZ();
-            int minY = world.getMinHeight();
-            Block bedrockBlock = world.getBlockAt(playerX, minY, playerZ);
-            isValid = bedrockBlock.getType() == Material.BEDROCK;
-
-            String validMessage = "足元の最下層（Y=" + minY + "）は" +
-                    (isValid ? ChatColor.GREEN + "岩盤" : ChatColor.RED + bedrockBlock.getType().name()) +
-                    ChatColor.WHITE + "です。";
-            player.sendMessage(validMessage);
-        }
-
+        // 現在のチャンクの有効性をチェック
         boolean isDiscovered = discoveryService.isDiscovered(player, player.getLocation().getChunk());
-
         String discoveredMessage = "このチャンクは" +
                 (isDiscovered ? ChatColor.YELLOW + "既に発見済み" : ChatColor.GREEN + "未発見") +
                 ChatColor.WHITE + "です。";
 
         player.sendMessage(discoveredMessage);
 
-        if (isValid && !isDiscovered) {
-            player.sendMessage(ChatColor.AQUA + "このチャンクは発見可能です！");
-        }
+        // 現在のワールド情報
+        String worldName = player.getWorld().getName();
+        int worldChunks = discoveryService.getPlayerChunksInWorld(player.getUniqueId().toString(), worldName);
+        player.sendMessage(ChatColor.WHITE + worldName + "での発見数: " + ChatColor.AQUA + worldChunks);
     }
 
     private void handleReloadCommand(CommandSender sender) {
@@ -188,7 +225,7 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
 
         try {
             plugin.reloadPluginConfig();
-            sender.sendMessage(ChatColor.GREEN + "設定のリロードが完了しました。");
+            sender.sendMessage(ChatColor.GREEN + "設定のリロードが完了しました。ワールドボーダーサイズは保持されています。");
         } catch (Exception e) {
             plugin.getLogger().severe("設定リロード中にエラーが発生しました: " + e.getMessage());
             sender.sendMessage(ChatColor.RED + "設定のリロード中にエラーが発生しました。");
@@ -204,24 +241,45 @@ public class ChunkDiscoveryCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    /**
+     * 次のマイルストーンを取得（簡易実装）
+     */
+    private int getNextMilestone(int current) {
+        int[] milestones = {10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000};
+        for (int milestone : milestones) {
+            if (milestone > current) {
+                return milestone;
+            }
+        }
+        return -1; // マイルストーンなし
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            List<String> subcommands = Arrays.asList("stats", "top", "info", "check");
+            List<String> subcommands = Arrays.asList("stats", "top", "info", "check", "world");
             if (sender.hasPermission("chunkdiscovery.reload")) {
-                subcommands = Arrays.asList("stats", "top", "info", "check", "reload");
+                subcommands = Arrays.asList("stats", "top", "info", "check", "reload", "world");
             }
             return subcommands.stream()
                     .filter(sub -> sub.startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());
         }
 
-        if (args.length == 2 && args[0].equalsIgnoreCase("stats")) {
-            // プレイヤー名の補完
-            return Bukkit.getOnlinePlayers().stream()
-                    .map(Player::getName)
-                    .filter(name -> name.toLowerCase().startsWith(args[1].toLowerCase()))
-                    .collect(Collectors.toList());
+        if (args.length == 2) {
+            if (args[0].equalsIgnoreCase("stats")) {
+                // プレイヤー名の補完
+                return Bukkit.getOnlinePlayers().stream()
+                        .map(Player::getName)
+                        .filter(name -> name.toLowerCase().startsWith(args[1].toLowerCase()))
+                        .collect(Collectors.toList());
+            } else if (args[0].equalsIgnoreCase("world")) {
+                // ワールド名の補完
+                return Bukkit.getWorlds().stream()
+                        .map(WorldInfo::getName)
+                        .filter(name -> name.toLowerCase().startsWith(args[1].toLowerCase()))
+                        .collect(Collectors.toList());
+            }
         }
 
         return List.of();

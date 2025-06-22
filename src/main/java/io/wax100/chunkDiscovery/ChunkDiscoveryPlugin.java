@@ -1,19 +1,15 @@
 package io.wax100.chunkDiscovery;
 
-import com.google.gson.Gson;
 import io.wax100.chunkDiscovery.database.ChunkRepository;
 import io.wax100.chunkDiscovery.database.PlayerRepository;
 import io.wax100.chunkDiscovery.manager.MilestoneConfig;
 import io.wax100.chunkDiscovery.database.DatabaseManager;
 import io.wax100.chunkDiscovery.service.DiscoveryService;
 import io.wax100.chunkDiscovery.service.RewardService;
-import io.wax100.chunkDiscovery.manager.EffectManager;
-import io.wax100.chunkDiscovery.manager.RewardManager;
 import io.wax100.chunkDiscovery.listener.ChunkDiscoveryListener;
 import io.wax100.chunkDiscovery.commands.ChunkDiscoveryCommand;
 import io.wax100.chunkDiscovery.config.WorldBorderConfig;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.World;
 
 import java.io.File;
 import java.io.FileWriter;

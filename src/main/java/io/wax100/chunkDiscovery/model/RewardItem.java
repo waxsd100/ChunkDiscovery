@@ -9,35 +9,16 @@ import org.bukkit.potion.PotionEffectType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 報酬アイテム・経験値・効果を保持するモデルクラス
  */
-public class RewardItem {
-    private final ItemStack item;
-    private final int experience;
-    private final List<PotionEffect> effects;
-
-    public RewardItem(ItemStack item, int experience, List<PotionEffect> effects) {
-        this.item = item;
-        this.experience = experience;
-        this.effects = effects;
-    }
-
-    public ItemStack getItem() {
-        return item;
-    }
-
-    public int getExperience() {
-        return experience;
-    }
-
-    public List<PotionEffect> getEffects() {
-        return effects;
-    }
+public record RewardItem(ItemStack item, int experience, List<PotionEffect> effects) {
 
     /**
      * コンフィグから RewardItem を生成する
+     *
      * @param section config.yml の該当セクション
      * @return RewardItem インスタンス
      */
@@ -50,7 +31,7 @@ public class RewardItem {
         ItemStack stack = null;
         if (section.isConfigurationSection("item")) {
             ConfigurationSection itemSec = section.getConfigurationSection("item");
-            String matName = itemSec.getString("material", "STONE").toUpperCase();
+            String matName = Objects.requireNonNull(itemSec).getString("material", "STONE").toUpperCase();
             Material material = Material.getMaterial(matName);
             int amount = itemSec.getInt("amount", 1);
             if (material != null) {

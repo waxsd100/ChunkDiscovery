@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * プレイヤーのチャンク発見処理を担当するサービスクラス（簡素化版）
+ * プレイヤーのチャンク発見処理を担当するサービスクラス
  */
 public class DiscoveryService {
     private final PlayerRepository playerRepo;
@@ -34,10 +34,11 @@ public class DiscoveryService {
     }
 
     /**
-     * チャンク発見時の処理（非同期対応・DB保存対応）
+     * チャンク発見時の処理（ワールド別ボーダー対応）
      */
     public void handleDiscovery(Player player, Chunk chunk) {
         String pid = player.getUniqueId().toString();
+        String worldName = chunk.getWorld().getName();
 
         // 非同期でDB操作を実行
         CompletableFuture.supplyAsync(() -> {
@@ -48,13 +49,16 @@ public class DiscoveryService {
                 // 個人発見チェック
                 boolean isPersonalFirst = playerRepo.saveIfAbsentChunk(pid, chunk);
 
-                // 発見数を増加
-                PlayerData data = null;
+                // 発見数を増加（全体）
+                PlayerData globalData = null;
                 if (isPersonalFirst) {
-                    data = playerRepo.incrementTotalChunks(pid);
+                    globalData = playerRepo.incrementTotalChunks(pid);
                 }
 
-                return new DiscoveryResult(isGlobalFirst, isPersonalFirst, data);
+                // ワールド別チャンク数を取得
+                int worldChunks = playerRepo.getPlayerChunksInWorld(pid, worldName);
+
+                return new DiscoveryResult(isGlobalFirst, isPersonalFirst, globalData, worldChunks);
             } catch (Exception e) {
                 plugin.getLogger().severe("チャンク発見処理中にデータベースエラーが発生しました: " + e.getMessage());
                 throw new RuntimeException(e);
@@ -63,14 +67,20 @@ public class DiscoveryService {
             // メインスレッドで結果を処理
             try {
                 if (result.personalFirst && result.playerData != null) {
-                    int total = result.playerData.getTotalChunks();
+                    int totalGlobal = result.playerData.getTotalChunks();
+                    int totalInWorld = result.worldChunks;
 
-                    // ワールドボーダー拡張（DBに保存）
-                    double newSize = WorldBorderConfig.calculateNewSize(player.getWorld(), total);
-                    WorldBorderConfig.updateBorderSize(player.getWorld(), newSize, total);
+                    // ワールド別ボーダー拡張（そのワールドでの発見数を使用）
+                    double newSize = WorldBorderConfig.calculateNewSize(player.getWorld(), totalInWorld);
+                    WorldBorderConfig.updateBorderSize(player.getWorld(), newSize, totalInWorld);
 
-                    // 報酬付与
-                    rewardService.grantRewards(player, result.globalFirst, true, total);
+                    plugin.getLogger().info(String.format(
+                            "%s が %s でチャンクを発見: 全体 %d / %s内 %d / ボーダー %.1f",
+                            player.getName(), worldName, totalGlobal, worldName, totalInWorld, newSize
+                    ));
+
+                    // 報酬付与（全体の発見数を使用）
+                    rewardService.grantRewards(player, result.globalFirst, true, totalGlobal);
 
                     // グローバルマイルストーンチェック
                     if (result.globalFirst) {
@@ -99,6 +109,20 @@ public class DiscoveryService {
                 return playerRepo.getTotalChunks(playerId);
             } catch (Exception e) {
                 plugin.getLogger().severe("プレイヤー統計取得中にエラーが発生しました: " + e.getMessage());
+                return 0;
+            }
+        });
+    }
+
+    /**
+     * プレイヤーのワールド別チャンク発見数を取得（非同期）
+     */
+    public CompletableFuture<Integer> getPlayerWorldChunksAsync(String playerId, String worldName) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return playerRepo.getPlayerChunksInWorld(playerId, worldName);
+            } catch (Exception e) {
+                plugin.getLogger().severe("ワールド別プレイヤー統計取得中にエラーが発生しました: " + e.getMessage());
                 return 0;
             }
         });
@@ -185,5 +209,5 @@ public class DiscoveryService {
     /**
      * 発見結果を格納するためのレコードクラス
      */
-    private record DiscoveryResult(boolean globalFirst, boolean personalFirst, PlayerData playerData) {}
+    private record DiscoveryResult(boolean globalFirst, boolean personalFirst, PlayerData playerData, int worldChunks) {}
 }

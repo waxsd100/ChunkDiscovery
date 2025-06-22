@@ -147,8 +147,8 @@ public class RewardManager {
             }
 
             // アイテム付与
-            if (reward.getItem() != null) {
-                ItemStack item = reward.getItem().clone(); // アイテムをクローンして安全に付与
+            if (reward.item() != null) {
+                ItemStack item = reward.item().clone(); // アイテムをクローンして安全に付与
 
                 // インベントリに空きがない場合の処理
                 if (player.getInventory().firstEmpty() == -1) {
@@ -160,13 +160,13 @@ public class RewardManager {
             }
 
             // 経験値付与
-            if (reward.getExperience() > 0) {
-                player.giveExp(reward.getExperience());
+            if (reward.experience() > 0) {
+                player.giveExp(reward.experience());
             }
 
             // ポーション効果付与
-            if (reward.getEffects() != null && !reward.getEffects().isEmpty()) {
-                for (PotionEffect effect : reward.getEffects()) {
+            if (reward.effects() != null && !reward.effects().isEmpty()) {
+                for (PotionEffect effect : reward.effects()) {
                     if (effect != null) {
                         // 既存の同じ効果がある場合は上書きしない（より強い効果を優先）
                         PotionEffect existingEffect = player.getPotionEffect(effect.getType());
