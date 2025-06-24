@@ -11,8 +11,6 @@ import io.wax100.chunkDiscovery.commands.ChunkDiscoveryCommand;
 import io.wax100.chunkDiscovery.config.WorldBorderConfig;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.util.Objects;
 
 public class ChunkDiscoveryPlugin extends JavaPlugin {
@@ -33,20 +31,6 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
                 return;
             }
 
-            // JSON をコピー（エラーハンドリング付き）
-            try {
-                saveResource("milestones.json", false);
-            } catch (IllegalArgumentException e) {
-                getLogger().warning("milestones.json リソースが見つかりません。デフォルトファイルを作成します。");
-                createDefaultMilestonesJson();
-            }
-
-            try {
-                saveResource("global_milestones.json", false);
-            } catch (IllegalArgumentException e) {
-                getLogger().warning("global_milestones.json リソースが見つかりません。デフォルトファイルを作成します。");
-                createDefaultGlobalMilestonesJson();
-            }
 
             // MySQL DB 初期化（テーブル生成も含む）
             try {
@@ -67,9 +51,9 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
             // ワールドボーダー設定の初期化（DB復元機能付き）
             WorldBorderConfig.init(this);
 
-            // マイルストーン JSON をロード
+            // マイルストーン設定をYAMLから読み込み
             try {
-                MilestoneConfig.init(getDataFolder().toPath());
+                MilestoneConfig.init(this);
                 getLogger().info("マイルストーン設定を読み込みました。");
             } catch (Exception e) {
                 getLogger().warning("マイルストーン設定の読み込みに失敗しました: " + e.getMessage());
@@ -129,7 +113,7 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
             WorldBorderConfig.reloadSettings();
 
             // マイルストーン設定をリロード
-            MilestoneConfig.init(getDataFolder().toPath());
+            MilestoneConfig.init(this);
 
             // 報酬設定をリロード
             rewardService.reloadRewards();
@@ -192,59 +176,6 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
         }
     }
 
-    /**
-     * デフォルトのmilestones.jsonファイルを作成
-     */
-    private void createDefaultMilestonesJson() {
-        try {
-            File file = new File(getDataFolder(), "milestones.json");
-            if (!file.exists()) {
-                getDataFolder().mkdirs();
-                try (FileWriter writer = new FileWriter(file)) {
-                    writer.write("[\n");
-                    writer.write("  {\n");
-                    writer.write("    \"discoveryCount\": 10,\n");
-                    writer.write("    \"items\": [],\n");
-                    writer.write("    \"message\": \"10チャンク発見達成！\",\n");
-                    writer.write("    \"sendMessage\": true,\n");
-                    writer.write("    \"broadcast\": false,\n");
-                    writer.write("    \"playEffects\": true\n");
-                    writer.write("  }\n");
-                    writer.write("]\n");
-                }
-                getLogger().info("デフォルトのmilestones.jsonを作成しました。");
-            }
-        } catch (Exception e) {
-            getLogger().warning("デフォルトmilestones.json作成に失敗しました: " + e.getMessage());
-        }
-    }
-
-    /**
-     * デフォルトのglobal_milestones.jsonファイルを作成
-     */
-    private void createDefaultGlobalMilestonesJson() {
-        try {
-            File file = new File(getDataFolder(), "global_milestones.json");
-            if (!file.exists()) {
-                getDataFolder().mkdirs();
-                try (FileWriter writer = new FileWriter(file)) {
-                    writer.write("[\n");
-                    writer.write("  {\n");
-                    writer.write("    \"discoveryCount\": 100,\n");
-                    writer.write("    \"items\": [],\n");
-                    writer.write("    \"message\": \"サーバー全体で100チャンクが発見されました！\",\n");
-                    writer.write("    \"sendMessage\": true,\n");
-                    writer.write("    \"broadcast\": true,\n");
-                    writer.write("    \"playEffects\": true\n");
-                    writer.write("  }\n");
-                    writer.write("]\n");
-                }
-                getLogger().info("デフォルトのglobal_milestones.jsonを作成しました。");
-            }
-        } catch (Exception e) {
-            getLogger().warning("デフォルトglobal_milestones.json作成に失敗しました: " + e.getMessage());
-        }
-    }
 
     public DiscoveryService getDiscoveryService() {
         return discoveryService;

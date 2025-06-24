@@ -26,8 +26,6 @@ dependencies {
     implementation 'com.zaxxer:HikariCP:5.0.1'
     implementation 'mysql:mysql-connector-java:8.0.33'
 
-    // GSonを明示的に追加（マイルストーンJSONのため）
-    implementation 'com.google.code.gson:gson:2.10.1'
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -42,7 +40,6 @@ shadowJar {
     relocate 'com.zaxxer.hikari', 'io.wax100.chunkdiscovery.lib.hikari'
     relocate 'org.slf4j', 'io.wax100.chunkdiscovery.lib.slf4j'
     relocate 'com.mysql', 'io.wax100.chunkdiscovery.lib.mysql'
-    relocate 'com.google.gson', 'io.wax100.chunkdiscovery.lib.gson'
 
     // 除外するファイル（不要なメタデータ）
     exclude 'META-INF/DEPENDENCIES'
