@@ -68,7 +68,11 @@ public class RewardService {
      */
     private void checkPersonalMilestones(Player player, int totalChunks) {
         try {
+            plugin.getLogger().info("個人マイルストーンチェック開始: プレイヤー=" + player.getName() + ", 総チャンク数=" + totalChunks);
+            plugin.getLogger().info("利用可能なマイルストーン数: " + MilestoneConfig.personal.size());
+            
             for (MilestoneConfig.MilestoneEntry milestone : MilestoneConfig.personal) {
+                plugin.getLogger().info("マイルストーンチェック: 設定値=" + milestone.discoveryCount + ", 現在値=" + totalChunks);
                 if (milestone.discoveryCount == totalChunks) {
                     // 報酬アイテムを付与
                     if (milestone.items != null) {
@@ -107,7 +111,12 @@ public class RewardService {
      */
     public void checkGlobalMilestones(int totalDiscoveredChunks) {
         try {
+            plugin.getLogger().info("グローバルマイルストーンチェック開始: 総発見チャンク数=" + totalDiscoveredChunks);
+            plugin.getLogger().info("利用可能なグローバルマイルストーン数: " + MilestoneConfig.global.size());
+            plugin.getLogger().info("既にトリガーされたマイルストーン: " + triggeredGlobalMilestones);
+            
             for (MilestoneConfig.MilestoneEntry milestone : MilestoneConfig.global) {
+                plugin.getLogger().info("グローバルマイルストーンチェック: 設定値=" + milestone.discoveryCount + ", 現在値=" + totalDiscoveredChunks);
                 if (milestone.discoveryCount == totalDiscoveredChunks &&
                         !triggeredGlobalMilestones.contains(milestone.discoveryCount)) {
 

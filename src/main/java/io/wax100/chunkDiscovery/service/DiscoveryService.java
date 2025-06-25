@@ -102,7 +102,8 @@ public class DiscoveryService {
     private void grantRewards(Player player, DiscoveryResult result, int totalGlobal) {
         rewardService.grantRewards(player, result.globalFirst, true, totalGlobal);
         
-        if (result.globalFirst) {
+        // グローバルマイルストーンは個人発見でもチェック（個人発見数の合計がサーバー全体の発見数に影響するため）
+        if (result.personalFirst) {
             rewardService.checkGlobalMilestones(getTotalDiscoveredChunks());
         }
     }

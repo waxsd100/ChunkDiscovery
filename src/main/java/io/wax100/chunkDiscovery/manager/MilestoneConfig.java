@@ -124,6 +124,16 @@ public class MilestoneConfig {
         public MilestoneEntry get(int index) {
             return instance != null ? instance.getPersonalMilestones().get(index) : super.get(index);
         }
+        
+        @Override
+        public java.util.Iterator<MilestoneEntry> iterator() {
+            return instance != null ? instance.getPersonalMilestones().iterator() : super.iterator();
+        }
+        
+        @Override
+        public boolean isEmpty() {
+            return instance != null ? instance.getPersonalMilestones().isEmpty() : super.isEmpty();
+        }
     };
     
     @Deprecated  
@@ -141,6 +151,16 @@ public class MilestoneConfig {
         @Override
         public MilestoneEntry get(int index) {
             return instance != null ? instance.getGlobalMilestones().get(index) : super.get(index);
+        }
+        
+        @Override
+        public java.util.Iterator<MilestoneEntry> iterator() {
+            return instance != null ? instance.getGlobalMilestones().iterator() : super.iterator();
+        }
+        
+        @Override
+        public boolean isEmpty() {
+            return instance != null ? instance.getGlobalMilestones().isEmpty() : super.isEmpty();
         }
     };
 }
