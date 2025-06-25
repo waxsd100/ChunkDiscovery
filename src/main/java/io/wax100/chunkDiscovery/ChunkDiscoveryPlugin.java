@@ -1,17 +1,14 @@
 package io.wax100.chunkDiscovery;
 
-import io.wax100.chunkDiscovery.database.ChunkRepository;
-import io.wax100.chunkDiscovery.database.PlayerRepository;
-import io.wax100.chunkDiscovery.manager.MilestoneConfig;
 import io.wax100.chunkDiscovery.database.DatabaseManager;
 import io.wax100.chunkDiscovery.service.DiscoveryService;
 import io.wax100.chunkDiscovery.service.RewardService;
-import io.wax100.chunkDiscovery.listener.ChunkDiscoveryListener;
-import io.wax100.chunkDiscovery.commands.ChunkDiscoveryCommand;
 import io.wax100.chunkDiscovery.config.WorldBorderConfig;
+import io.wax100.chunkDiscovery.manager.MilestoneConfig;
+import io.wax100.chunkDiscovery.initializer.PluginInitializer;
+import io.wax100.chunkDiscovery.exception.ConfigurationException;
+import io.wax100.chunkDiscovery.exception.DatabaseException;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.util.Objects;
 
 public class ChunkDiscoveryPlugin extends JavaPlugin {
 
@@ -21,65 +18,17 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         try {
-            // config.yml をコピー
-            saveDefaultConfig();
-
-            // 設定値のバリデーション
-            if (!validateConfig()) {
-                getLogger().severe("設定ファイルに無効な値が含まれています。プラグインを無効化します。");
-                getServer().getPluginManager().disablePlugin(this);
-                return;
-            }
-
-
-            // MySQL DB 初期化（テーブル生成も含む）
-            try {
-                DatabaseManager.init(
-                        getConfig().getString("db.host"),
-                        getConfig().getInt("db.port"),
-                        getConfig().getString("db.name"),
-                        getConfig().getString("db.user"),
-                        getConfig().getString("db.pass")
-                );
-                getLogger().info("MySQL データベース接続が確立されました。");
-            } catch (Exception e) {
-                getLogger().severe("データベース初期化に失敗しました: " + e.getMessage());
-                getServer().getPluginManager().disablePlugin(this);
-                return;
-            }
-
-            // ワールドボーダー設定の初期化（DB復元機能付き）
-            WorldBorderConfig.init(this);
-
-            // マイルストーン設定をYAMLから読み込み
-            try {
-                MilestoneConfig.init(this);
-                getLogger().info("マイルストーン設定を読み込みました。");
-            } catch (Exception e) {
-                getLogger().warning("マイルストーン設定の読み込みに失敗しました: " + e.getMessage());
-            }
-
-            // サービス初期化（キャッシュ削除）
-            rewardService = new RewardService(this);
-            discoveryService = new DiscoveryService(
-                    new PlayerRepository(DatabaseManager.getDataSource()),
-                    new ChunkRepository(DatabaseManager.getDataSource()),
-                    rewardService,
-                    this
-            );
-
-            // イベント/コマンド登録
-            getServer().getPluginManager().registerEvents(
-                    new ChunkDiscoveryListener(discoveryService), this
-            );
-            Objects.requireNonNull(getCommand("chunkdiscovery")).setExecutor(
-                    new ChunkDiscoveryCommand(discoveryService, this)
-            );
-
-            getLogger().info("ChunkDiscoveryPlugin が正常に有効化されました。");
-
+            PluginInitializer initializer = new PluginInitializer(this);
+            var result = initializer.initialize();
+            
+            this.discoveryService = result.discoveryService();
+            this.rewardService = result.rewardService();
+            
+        } catch (ConfigurationException | DatabaseException e) {
+            getLogger().severe("プラグインの初期化に失敗しました: " + e.getMessage());
+            getServer().getPluginManager().disablePlugin(this);
         } catch (Exception e) {
-            getLogger().severe("プラグインの初期化中にエラーが発生しました: " + e.getMessage());
+            getLogger().severe("プラグインの初期化中に予期しないエラーが発生しました: " + e.getMessage());
             e.printStackTrace();
             getServer().getPluginManager().disablePlugin(this);
         }
@@ -103,8 +52,9 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
             getLogger().info("設定をリロードしています...");
 
             reloadConfig();
-
-            if (!validateConfig()) {
+            
+            var validator = new io.wax100.chunkDiscovery.initializer.ConfigValidator(getConfig(), getLogger());
+            if (!validator.validate()) {
                 getLogger().severe("リロードされた設定ファイルに無効な値が含まれています。");
                 return;
             }
@@ -124,57 +74,6 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
         }
     }
 
-    /**
-     * 設定値のバリデーション
-     */
-    private boolean validateConfig() {
-        try {
-            // ボーダー設定のチェック
-            double initSize = getConfig().getDouble("border.initial_size", 100.0);
-            double perChunk = getConfig().getDouble("border.expansion_per_chunk", 1.0);
-
-            if (initSize < 0 || initSize > 60000000) {
-                getLogger().severe("border.initial_size は 0 以上 60000000 以下である必要があります: " + initSize);
-                return false;
-            }
-
-            if (perChunk < 0 || perChunk > 1000) {
-                getLogger().severe("border.expansion_per_chunk は 0 以上 1000 以下である必要があります: " + perChunk);
-                return false;
-            }
-
-            // MySQL DB設定のチェック
-            String host = getConfig().getString("db.host");
-            int port = getConfig().getInt("db.port", 3306);
-            String dbName = getConfig().getString("db.name");
-            String user = getConfig().getString("db.user");
-
-            if (host == null || host.trim().isEmpty()) {
-                getLogger().severe("db.host が設定されていません。");
-                return false;
-            }
-
-            if (port < 1 || port > 65535) {
-                getLogger().severe("db.port は 1 以上 65535 以下である必要があります: " + port);
-                return false;
-            }
-
-            if (dbName == null || dbName.trim().isEmpty()) {
-                getLogger().severe("db.name が設定されていません。");
-                return false;
-            }
-
-            if (user == null || user.trim().isEmpty()) {
-                getLogger().severe("db.user が設定されていません。");
-                return false;
-            }
-
-            return true;
-        } catch (Exception e) {
-            getLogger().severe("設定バリデーション中にエラーが発生しました: " + e.getMessage());
-            return false;
-        }
-    }
 
 
     public DiscoveryService getDiscoveryService() {

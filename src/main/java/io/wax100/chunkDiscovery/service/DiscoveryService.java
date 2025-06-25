@@ -37,67 +37,82 @@ public class DiscoveryService {
      * チャンク発見時の処理（ワールド別ボーダー対応）
      */
     public void handleDiscovery(Player player, Chunk chunk) {
-        String pid = player.getUniqueId().toString();
+        String playerId = player.getUniqueId().toString();
         String worldName = chunk.getWorld().getName();
+        
+        processDiscoveryAsync(playerId, chunk, worldName)
+            .thenAcceptAsync(result -> processDiscoveryResult(player, result, worldName), 
+                runnable -> Bukkit.getScheduler().runTask(plugin, runnable))
+            .exceptionally(throwable -> handleDiscoveryError(player, throwable));
+    }
 
-        // 非同期でDB操作を実行
-        CompletableFuture.supplyAsync(() -> {
+    private CompletableFuture<DiscoveryResult> processDiscoveryAsync(String playerId, Chunk chunk, String worldName) {
+        return CompletableFuture.supplyAsync(() -> {
             try {
-                // グローバル発見チェック
-                boolean isGlobalFirst = chunkRepo.saveIfAbsent(chunk, pid);
-
-                // 個人発見チェック
-                boolean isPersonalFirst = playerRepo.saveIfAbsentChunk(pid, chunk);
-
-                // 発見数を増加（全体）
+                boolean isGlobalFirst = chunkRepo.saveIfAbsent(chunk, playerId);
+                boolean isPersonalFirst = playerRepo.saveIfAbsentChunk(playerId, chunk);
+                
                 PlayerData globalData = null;
                 if (isPersonalFirst) {
-                    globalData = playerRepo.incrementTotalChunks(pid);
+                    globalData = playerRepo.incrementTotalChunks(playerId);
                 }
-
-                // ワールド別チャンク数を取得
-                int worldChunks = playerRepo.getPlayerChunksInWorld(pid, worldName);
-
+                
+                int worldChunks = playerRepo.getPlayerChunksInWorld(playerId, worldName);
                 return new DiscoveryResult(isGlobalFirst, isPersonalFirst, globalData, worldChunks);
+                
             } catch (Exception e) {
                 plugin.getLogger().severe("チャンク発見処理中にデータベースエラーが発生しました: " + e.getMessage());
                 throw new RuntimeException(e);
             }
-        }).thenAcceptAsync(result -> {
-            // メインスレッドで結果を処理
-            try {
-                if (result.personalFirst && result.playerData != null) {
-                    int totalGlobal = result.playerData.getTotalChunks();
-                    int totalInWorld = result.worldChunks;
-
-                    // ワールド別ボーダー拡張（そのワールドでの発見数を使用）
-                    double newSize = WorldBorderConfig.calculateNewSize(player.getWorld(), totalInWorld);
-                    WorldBorderConfig.updateBorderSize(player.getWorld(), newSize, totalInWorld);
-
-                    plugin.getLogger().info(String.format(
-                            "%s が %s でチャンクを発見: 全体 %d / %s内 %d / ボーダー %.1f",
-                            player.getName(), worldName, totalGlobal, worldName, totalInWorld, newSize
-                    ));
-
-                    // 報酬付与（全体の発見数を使用）
-                    rewardService.grantRewards(player, result.globalFirst, true, totalGlobal);
-
-                    // グローバルマイルストーンチェック
-                    if (result.globalFirst) {
-                        rewardService.checkGlobalMilestones(getTotalDiscoveredChunks());
-                    }
-                }
-            } catch (Exception e) {
-                plugin.getLogger().severe("チャンク発見結果処理中にエラーが発生しました: " + e.getMessage());
-                player.sendMessage("§cチャンク発見の処理中にエラーが発生しました。");
-            }
-        }, runnable -> Bukkit.getScheduler().runTask(plugin, runnable)).exceptionally(throwable -> {
-            plugin.getLogger().severe("チャンク発見処理中に予期しないエラーが発生しました: " + throwable.getMessage());
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                player.sendMessage("§cチャンク発見に失敗しました。管理者にお知らせください。");
-            });
-            return null;
         });
+    }
+
+    private void processDiscoveryResult(Player player, DiscoveryResult result, String worldName) {
+        try {
+            if (!result.personalFirst || result.playerData == null) {
+                return;
+            }
+
+            int totalGlobal = result.playerData.getTotalChunks();
+            int totalInWorld = result.worldChunks;
+
+            updateWorldBorder(player, totalInWorld);
+            logDiscovery(player, worldName, totalGlobal, totalInWorld);
+            grantRewards(player, result, totalGlobal);
+
+        } catch (Exception e) {
+            plugin.getLogger().severe("チャンク発見結果処理中にエラーが発生しました: " + e.getMessage());
+            player.sendMessage("§cチャンク発見の処理中にエラーが発生しました。");
+        }
+    }
+
+    private void updateWorldBorder(Player player, int totalInWorld) {
+        double newSize = WorldBorderConfig.calculateNewSize(player.getWorld(), totalInWorld);
+        WorldBorderConfig.updateBorderSize(player.getWorld(), newSize, totalInWorld);
+    }
+
+    private void logDiscovery(Player player, String worldName, int totalGlobal, int totalInWorld) {
+        double borderSize = player.getWorld().getWorldBorder().getSize();
+        plugin.getLogger().info(String.format(
+            "%s が %s でチャンクを発見: 全体 %d / %s内 %d / ボーダー %.1f",
+            player.getName(), worldName, totalGlobal, worldName, totalInWorld, borderSize
+        ));
+    }
+
+    private void grantRewards(Player player, DiscoveryResult result, int totalGlobal) {
+        rewardService.grantRewards(player, result.globalFirst, true, totalGlobal);
+        
+        if (result.globalFirst) {
+            rewardService.checkGlobalMilestones(getTotalDiscoveredChunks());
+        }
+    }
+
+    private Void handleDiscoveryError(Player player, Throwable throwable) {
+        plugin.getLogger().severe("チャンク発見処理中に予期しないエラーが発生しました: " + throwable.getMessage());
+        Bukkit.getScheduler().runTask(plugin, () -> 
+            player.sendMessage("§cチャンク発見に失敗しました。管理者にお知らせください。")
+        );
+        return null;
     }
 
     /**
