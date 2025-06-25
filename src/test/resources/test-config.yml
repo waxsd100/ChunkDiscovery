@@ -1,0 +1,49 @@
+# Test configuration for ChunkDiscovery plugin
+
+# Database settings
+db:
+  host: "localhost"
+  port: 3306
+  name: "test_db"
+  user: "test_user"
+  pass: "test_password"
+
+# World border settings
+border:
+  initial_size: 50.0
+  expansion_per_chunk: 1.0
+  world_types:
+    overworld:
+      initial_size: 16.0
+      expansion_per_chunk: 2.0
+
+# Rewards configuration
+rewards:
+  world_first:
+    item:
+      material: DIAMOND
+      amount: 1
+    experience: 50
+
+  personal_first:
+    item:
+      material: EMERALD
+      amount: 1
+    experience: 10
+
+  milestones:
+    5:
+      item:
+        material: IRON_INGOT
+        amount: 2
+      experience: 25
+    10:
+      item:
+        material: GOLD_INGOT
+        amount: 1
+      experience: 50
+    25:
+      item:
+        material: DIAMOND
+        amount: 1
+      experience: 100

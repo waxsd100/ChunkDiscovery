@@ -26,11 +26,27 @@ dependencies {
     implementation 'com.zaxxer:HikariCP:5.0.1'
     implementation 'mysql:mysql-connector-java:8.0.33'
 
+    // テスト依存関係
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    testImplementation 'org.mockito:mockito-core:5.6.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.6.0'
+    testImplementation 'com.h2database:h2:2.2.224'
+    testImplementation 'io.papermc.paper:paper-api:1.20.1-R0.1-SNAPSHOT'
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.release.set(17)
+}
+
+// テスト設定
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
+    maxHeapSize = "1G"
 }
 
 // ShadowJar 設定
