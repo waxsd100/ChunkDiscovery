@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
-    id 'xyz.jpenilla.run-paper' version '2.0.1'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'xyz.jpenilla.run-paper' version '2.2.4'
 }
 
 group = 'io.wax100'
@@ -36,11 +36,14 @@ dependencies {
     // Testcontainers
     testImplementation 'org.testcontainers:junit-jupiter:1.19.3'
     testImplementation 'org.testcontainers:mysql:1.19.3'
+    
+    // JUnit Platform (明示的に指定してテストフレームワーク警告を回避)
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.release.set(17)
+    options.release = 17
 }
 
 // テスト設定
@@ -55,7 +58,7 @@ test {
 
 // ShadowJar 設定
 shadowJar {
-    archiveClassifier.set('')
+    archiveClassifier = ''
     // 依存関係をリロケート
     relocate 'com.zaxxer.hikari', 'io.wax100.chunkdiscovery.lib.hikari'
     relocate 'org.slf4j', 'io.wax100.chunkdiscovery.lib.slf4j'
@@ -70,8 +73,8 @@ shadowJar {
     exclude 'META-INF/*.RSA'
 
     // JARファイル名の最終設定
-    archiveBaseName.set('chunk-discovery-plugin')
-    archiveVersion.set(project.version.toString())
+    archiveBaseName = 'chunk-discovery-plugin'
+    archiveVersion = project.version.toString()
 }
 
 // デフォルトでshadowJarを実行
