@@ -1,0 +1,311 @@
+name: 🚀 Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.2.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+
+jobs:
+  # ==========================================
+  # Pre-Release Validation
+  # ==========================================
+  validate:
+    name: 🔍 Pre-Release Validation
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ☕ Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: 📦 Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - name: 🔢 Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            TAG="${{ github.event.inputs.version }}"
+          else
+            TAG=${GITHUB_REF#refs/tags/}
+            VERSION=${TAG#v}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "📦 Release version: $VERSION" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🧪 Run Full Test Suite
+        run: ./gradlew test --continue
+
+      - name: 🔍 Security Scan
+        run: ./gradlew dependencyCheckAnalyze
+        continue-on-error: true
+
+      - name: 📊 Generate Release Notes Preview
+        run: |
+          echo "## 📋 Release Notes Preview" >> $GITHUB_STEP_SUMMARY
+          echo "Version: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "Tag: ${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================
+  # Multi-Platform Build
+  # ==========================================
+  build:
+    name: 🏗️ Build Release Artifacts
+    runs-on: ${{ matrix.os }}
+    needs: validate
+    
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        include:
+          - os: ubuntu-latest
+            primary: true
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: 📦 Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - name: 🏗️ Build with Gradle
+        run: ./gradlew build shadowJar --build-cache
+
+      - name: 📋 Generate Build Metadata
+        if: matrix.primary
+        run: |
+          mkdir -p release-assets
+          echo "# ChunkDiscovery Plugin Release" > release-assets/README.md
+          echo "" >> release-assets/README.md
+          echo "**Version:** ${{ needs.validate.outputs.version }}" >> release-assets/README.md
+          echo "**Build Date:** $(date -u)" >> release-assets/README.md
+          echo "**Commit:** ${{ github.sha }}" >> release-assets/README.md
+          echo "" >> release-assets/README.md
+          echo "## Installation" >> release-assets/README.md
+          echo "1. Download \`ChunkDiscovery-${{ needs.validate.outputs.version }}.jar\`" >> release-assets/README.md
+          echo "2. Place in your server's \`plugins/\` folder" >> release-assets/README.md
+          echo "3. Restart your server" >> release-assets/README.md
+          echo "4. Configure the plugin as needed" >> release-assets/README.md
+          
+          # Copy main JAR with version name
+          cp build/libs/*-all.jar "release-assets/ChunkDiscovery-${{ needs.validate.outputs.version }}.jar"
+
+      - name: 📦 Upload Release Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.os }}
+          path: |
+            ${{ matrix.primary && 'release-assets/' || 'build/libs/*-all.jar' }}
+          retention-days: 30
+
+  # ==========================================
+  # Generate Release Notes
+  # ==========================================
+  changelog:
+    name: 📝 Generate Changelog
+    runs-on: ubuntu-latest
+    needs: validate
+    outputs:
+      changelog: ${{ steps.changelog.outputs.changelog }}
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📝 Generate Changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          configuration: ".github/changelog-config.json"
+          toTag: ${{ needs.validate.outputs.tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📄 Create Changelog File
+        run: |
+          echo '${{ steps.changelog.outputs.changelog }}' > CHANGELOG.md
+
+      - name: 📦 Upload Changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog
+          path: CHANGELOG.md
+
+  # ==========================================
+  # Create GitHub Release
+  # ==========================================
+  release:
+    name: 🎉 Create Release
+    runs-on: ubuntu-latest
+    needs: [ validate, build, changelog ]
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Download Release Assets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-ubuntu-latest
+          path: release-assets
+
+      - name: 📦 Download Changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: changelog
+          path: .
+
+      - name: 🎉 Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.validate.outputs.tag }}
+          name: "ChunkDiscovery ${{ needs.validate.outputs.version }}"
+          body_path: CHANGELOG.md
+          files: |
+            release-assets/ChunkDiscovery-${{ needs.validate.outputs.version }}.jar
+            release-assets/README.md
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease || contains(needs.validate.outputs.version, 'alpha') || contains(needs.validate.outputs.version, 'beta') || contains(needs.validate.outputs.version, 'rc') }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ==========================================
+  # Docker Release (Future)
+  # ==========================================
+  docker:
+    name: 🐳 Docker Release
+    runs-on: ubuntu-latest
+    needs: [ validate, build ]
+    if: false # Disabled for now, enable when Docker support is added
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-ubuntu-latest
+          path: docker-assets
+
+      - name: 🔐 Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐳 Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ needs.validate.outputs.version }}
+
+  # ==========================================
+  # Post-Release Actions
+  # ==========================================
+  post-release:
+    name: 📬 Post-Release Notifications
+    runs-on: ubuntu-latest
+    needs: [ validate, release ]
+    if: always()
+
+    steps:
+      - name: 🔔 Discord Release Notification
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          title: "🎉 ChunkDiscovery ${{ needs.validate.outputs.version }} Released!"
+          description: |
+            **Version:** ${{ needs.validate.outputs.version }}
+            **Tag:** ${{ needs.validate.outputs.tag }}
+            **Download:** [GitHub Releases](https://github.com/${{ github.repository }}/releases/tag/${{ needs.validate.outputs.tag }})
+          color: 0x00ff00
+
+      - name: 📊 Update Release Summary
+        run: |
+          echo "# 🎉 Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Release Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** ${{ needs.validate.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release URL:** https://github.com/${{ github.repository }}/releases/tag/${{ needs.validate.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎯 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Update documentation if needed" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Announce on community channels" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Monitor for issues and feedback" >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================
+  # Spigot/Bukkit Release (Future)
+  # ==========================================
+  spigot-release:
+    name: 📤 Spigot Resource Upload
+    runs-on: ubuntu-latest
+    needs: [ validate, release ]
+    if: false # Disabled for now, enable when Spigot API keys are configured
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Download Release Assets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-ubuntu-latest
+          path: spigot-assets
+
+      - name: 📤 Upload to SpigotMC
+        # Custom action or script to upload to SpigotMC
+        run: |
+          echo "Would upload to SpigotMC here"
+          echo "Asset: spigot-assets/ChunkDiscovery-${{ needs.validate.outputs.version }}.jar"
+
+      - name: 📤 Upload to Bukkit
+        # Custom action or script to upload to Bukkit
+        run: |
+          echo "Would upload to Bukkit here"
+          echo "Asset: spigot-assets/ChunkDiscovery-${{ needs.validate.outputs.version }}.jar"
