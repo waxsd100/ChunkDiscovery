@@ -102,6 +102,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    permissions:
+      contents: write
     
     steps:
     - name: Checkout code
@@ -136,21 +138,11 @@ jobs:
         echo "version=$VERSION" >> $GITHUB_OUTPUT
     
     - name: Create Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
         tag_name: v${{ steps.get_version.outputs.version }}
-        release_name: Release v${{ steps.get_version.outputs.version }}
+        name: Release v${{ steps.get_version.outputs.version }}
+        files: |
+          build/libs/*-all.jar
         draft: false
         prerelease: false
-    
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: build/libs/ChunkDiscovery-${{ steps.get_version.outputs.version }}-all.jar
-        asset_name: ChunkDiscovery-${{ steps.get_version.outputs.version }}.jar
-        asset_content_type: application/java-archive
