@@ -1,0 +1,239 @@
+# ChunkDiscovery Plugin - 設定例ファイル
+# この設定ファイルをコピーして config.yml として使用してください
+
+# =====================================================
+# データベース設定
+# =====================================================
+db:
+  host: "localhost"                    # MySQLサーバーのホスト
+  port: 3306                          # MySQLサーバーのポート
+  name: "minecraft_chunks"            # データベース名
+  user: "minecraft_user"              # データベースユーザー名
+  pass: "your_secure_password"        # データベースパスワード
+  
+  # コネクションプール設定（上級者向け）
+  pool:
+    maximum_pool_size: 10             # 最大接続数
+    connection_timeout: 30000         # 接続タイムアウト（ミリ秒）
+    idle_timeout: 600000              # アイドルタイムアウト（ミリ秒）
+
+# =====================================================
+# ワールドボーダー設定
+# =====================================================
+border:
+  # デフォルト設定（すべてのワールドに適用される基本値）
+  initial_size: 100.0                 # 初期ボーダーサイズ（ブロック単位）
+  expansion_per_chunk: 1.0            # チャンク発見毎の拡張量
+  
+  # 個別ワールド設定（ワールド名で指定）
+  # 注意: ワールド名は大文字小文字を区別します
+  worlds:
+    world:                            # メインワールド
+      initial_size: 16.0
+      expansion_per_chunk: 4.0
+    world_nether:                     # ネザー
+      initial_size: 32.0
+      expansion_per_chunk: 16.0
+    world_the_end:                    # エンド
+      initial_size: 1000.0
+      expansion_per_chunk: 8.0
+    # カスタムワールドの例
+    survival_world:
+      initial_size: 50.0
+      expansion_per_chunk: 2.0
+  
+  # ワールドタイプ別設定（環境タイプで指定）
+  # 個別ワールド設定が優先されます
+  world_types:
+    overworld:                        # オーバーワールド環境
+      initial_size: 16.0
+      expansion_per_chunk: 4.0
+    nether:                           # ネザー環境
+      initial_size: 32.0
+      expansion_per_chunk: 16.0
+    end:                              # エンド環境
+      initial_size: 60000.0           # エンドは広く設定
+      expansion_per_chunk: 2.0
+
+# =====================================================
+# 報酬システム設定
+# =====================================================
+rewards:
+  # 世界初発見報酬（サーバー全体で初めて発見されたチャンク）
+  world_first:
+    items:
+      - material: DIAMOND             # ダイヤモンド
+        amount: 3
+        name: "&b&l世界初発見の証"      # カスタム名（カラーコード使用可能）
+        lore:
+          - "&7この栄誉ある発見を称える"
+          - "&6レア度: &e★★★★★"
+      - material: EXPERIENCE_BOTTLE   # 経験値ボトル
+        amount: 5
+    experience: 100                   # 経験値報酬
+    
+  # 個人初発見報酬（プレイヤーが個人として初めて発見したチャンク）
+  personal_first:
+    items:
+      - material: EMERALD             # エメラルド
+        amount: 5
+        name: "&a探索者の証"
+        lore:
+          - "&7新たなチャンクを発見した証"
+      - material: BREAD               # パン（回復アイテム）
+        amount: 8
+    experience: 10
+    
+  # マイルストーン報酬（特定のチャンク数を達成したときの報酬）
+  milestones:
+    # 10チャンク達成
+    10:
+      items:
+        - material: IRON_INGOT
+          amount: 5
+          name: "&7初心者探索者"
+        - material: COOKED_BEEF
+          amount: 16
+      experience: 50
+      message: "&a10チャンク発見を達成しました！"
+      send_message: true              # メッセージを送信するか
+      broadcast: false                # 全体に広播するか（falseなら個人のみ）
+      play_effects: true              # エフェクトを再生するか
+      
+    # 25チャンク達成
+    25:
+      items:
+        - material: GOLD_INGOT
+          amount: 3
+          name: "&e熟練探索者"
+          lore:
+            - "&725チャンク発見の証明"
+        - material: ENCHANTED_GOLDEN_APPLE
+          amount: 1
+      experience: 100
+      message: "&e25チャンク発見を達成！"
+      send_message: true
+      broadcast: true                 # 全体に通知
+      play_effects: true
+      
+    # 50チャンク達成
+    50:
+      items:
+        - material: DIAMOND_PICKAXE
+          amount: 1
+          name: "&b探索者のツルハシ"
+          lore:
+            - "&750チャンク発見記念"
+            - "&7効率強化 III"
+          enchantments:               # エンチャント（将来実装予定）
+            - EFFICIENCY:3
+            - UNBREAKING:2
+      experience: 200
+      message: "&b50チャンク発見の偉業達成！"
+      send_message: true
+      broadcast: true
+      play_effects: true
+      
+    # 100チャンク達成
+    100:
+      items:
+        - material: NETHERITE_INGOT
+          amount: 1
+          name: "&4&l真の探索者の証"
+          lore:
+            - "&7100チャンク発見の証明"
+            - "&7真の探索者にのみ与えられる"
+            - "&4レア度: &c★★★★★★"
+        - material: TOTEM_OF_UNDYING
+          amount: 1
+          name: "&e探索者の守護"
+      experience: 500
+      message: "&4&l100チャンク発見の偉業を達成！"
+      send_message: true
+      broadcast: true
+      play_effects: true
+      
+    # 250チャンク達成
+    250:
+      items:
+        - material: BEACON
+          amount: 1
+          name: "&5&l探索の灯台"
+          lore:
+            - "&7250チャンク発見記念"
+            - "&7永遠の栄光を称える"
+        - material: NETHERITE_BLOCK
+          amount: 1
+      experience: 1000
+      message: "&5&l250チャンク発見！レジェンド級の探索者！"
+      send_message: true
+      broadcast: true
+      play_effects: true
+      
+    # 500チャンク達成
+    500:
+      items:
+        - material: DRAGON_EGG
+          amount: 1
+          name: "&d&l探索王の証"
+          lore:
+            - "&7500チャンク発見の伝説"
+            - "&7この偉業を成し遂げし者"
+            - "&dレア度: &5★★★★★★★"
+        - material: ELYTRA
+          amount: 1
+          name: "&d探索王の翼"
+      experience: 2500
+      message: "&d&l500チャンク発見！探索王の称号を獲得！"
+      send_message: true
+      broadcast: true
+      play_effects: true
+      
+    # 1000チャンク達成（最高峰）
+    1000:
+      items:
+        - material: NETHER_STAR
+          amount: 3
+          name: "&f&l究極探索者の星"
+          lore:
+            - "&71000チャンク発見の奇跡"
+            - "&7誰もが憧れる究極の称号"
+            - "&fレア度: &b★★★★★★★★"
+        - material: ENCHANTED_GOLDEN_APPLE
+          amount: 8
+          name: "&6祝福の林檎"
+      experience: 5000
+      message: "&f&l1000チャンク発見！究極探索者の誕生！"
+      send_message: true
+      broadcast: true
+      play_effects: true
+
+# =====================================================
+# プラグイン詳細設定（上級者向け）
+# =====================================================
+advanced:
+  # チャンク検証設定
+  chunk_validation:
+    require_bedrock: true             # 岩盤チェックを必須とするか
+    check_full_chunk: true            # チャンク全体の岩盤をチェックするか
+    
+  # パフォーマンス設定
+  performance:
+    async_database: true              # データベースアクセスを非同期で行うか
+    cache_player_positions: true      # プレイヤー位置をキャッシュするか
+    batch_database_updates: false     # データベース更新をバッチ処理するか
+    
+  # デバッグ設定
+  debug:
+    log_level: INFO                   # ログレベル（FINE, INFO, WARNING, SEVERE）
+    log_chunk_discoveries: true       # チャンク発見をログに記録するか
+    log_milestone_achievements: true  # マイルストーン達成をログに記録するか
+
+# =====================================================
+# 設定ファイルの注意事項
+# =====================================================
+# 1. YAML形式のため、インデント（空白）に注意してください
+# 2. 文字列にカラーコード（&a, &b等）を使用できます
+# 3. material は大文字で記述してください（例: DIAMOND, EMERALD）
+# 4. 設定変更後は /cd reload で反映できます
+# 5. 初期値に戻したい場合は該当項目を削除してください
