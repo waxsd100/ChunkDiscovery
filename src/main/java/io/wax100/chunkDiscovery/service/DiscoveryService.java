@@ -5,6 +5,9 @@ import io.wax100.chunkDiscovery.database.PlayerRepository;
 import io.wax100.chunkDiscovery.database.ChunkRepository;
 import io.wax100.chunkDiscovery.model.PlayerData;
 import io.wax100.chunkDiscovery.config.WorldBorderConfig;
+import io.wax100.chunkDiscovery.util.AsyncUtils;
+import io.wax100.chunkDiscovery.util.ErrorHandler;
+import io.wax100.chunkDiscovery.util.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.entity.Player;
@@ -27,10 +30,10 @@ public class DiscoveryService {
             RewardService rewardService,
             ChunkDiscoveryPlugin plugin
     ) {
-        this.playerRepo = playerRepo;
-        this.chunkRepo = chunkRepo;
-        this.rewardService = rewardService;
-        this.plugin = plugin;
+        this.playerRepo = Validate.requireNonNull(playerRepo, "PlayerRepository cannot be null");
+        this.chunkRepo = Validate.requireNonNull(chunkRepo, "ChunkRepository cannot be null");
+        this.rewardService = Validate.requireNonNull(rewardService, "RewardService cannot be null");
+        this.plugin = Validate.requireNonNull(plugin, "Plugin cannot be null");
     }
 
     /**
@@ -125,28 +128,27 @@ public class DiscoveryService {
      * プレイヤーのチャンク発見総数を取得（非同期）
      */
     public CompletableFuture<Integer> getPlayerTotalChunksAsync(String playerId) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return playerRepo.getTotalChunks(playerId);
-            } catch (Exception e) {
-                plugin.getLogger().severe("プレイヤー統計取得中にエラーが発生しました: " + e.getMessage());
-                return 0;
-            }
-        });
+        Validate.requireNonEmpty(playerId, "Player ID cannot be null or empty");
+        return AsyncUtils.executeAsyncWithDefault(
+            () -> playerRepo.getTotalChunks(playerId),
+            plugin.getLogger(),
+            "プレイヤー統計取得",
+            0
+        );
     }
 
     /**
      * プレイヤーのワールド別チャンク発見数を取得（非同期）
      */
     public CompletableFuture<Integer> getPlayerWorldChunksAsync(String playerId, String worldName) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return playerRepo.getPlayerChunksInWorld(playerId, worldName);
-            } catch (Exception e) {
-                plugin.getLogger().severe("ワールド別プレイヤー統計取得中にエラーが発生しました: " + e.getMessage());
-                return 0;
-            }
-        });
+        Validate.requireNonEmpty(playerId, "Player ID cannot be null or empty");
+        Validate.requireNonEmpty(worldName, "World name cannot be null or empty");
+        return AsyncUtils.executeAsyncWithDefault(
+            () -> playerRepo.getPlayerChunksInWorld(playerId, worldName),
+            plugin.getLogger(),
+            "ワールド別プレイヤー統計取得",
+            0
+        );
     }
 
     /**

@@ -30,59 +30,84 @@ public class ChunkDiscoveryListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent e) {
         try {
+            if (!shouldProcessMove(e)) {
+                return;
+            }
+            
             Player player = e.getPlayer();
             Chunk toChunk = e.getTo().getChunk();
-
-            // 同じチャンク内の移動は無視
-            ChunkPosition currentPos = new ChunkPosition(
-                    toChunk.getWorld().getName(),
-                    toChunk.getX(),
-                    toChunk.getZ()
-            );
-
-            ChunkPosition lastPos = lastChunkPositions.get(player.getUniqueId());
-            if (currentPos.equals(lastPos)) {
-                return;
+            
+            updatePlayerPosition(player, toChunk);
+            
+            if (shouldDiscoverChunk(player, toChunk)) {
+                discoveryService.handleDiscovery(player, toChunk);
             }
-
-            // 位置を更新
-            lastChunkPositions.put(player.getUniqueId(), currentPos);
-
-            // 既に発見済みなら無視
-            if (discoveryService.isDiscovered(player, toChunk)) {
-                return;
-            }
-
-            // 岩盤じゃないので発見対象外(ENDは必ず失敗する)
-            if (!isValidChunkChunk(player)) {
-                return;
-            }
-
-            // チャンクの岩盤チェック
-            if (!checkBedrockAtBottom(toChunk)) {
-                return;
-            }
-
-            // 発見処理
-            discoveryService.handleDiscovery(player, toChunk);
-
+            
         } catch (Exception ex) {
             // エラーでもプレイヤーの移動を妨げない
             System.err.println("チャンク発見処理中にエラー: " + ex.getMessage());
         }
     }
+    
+    /**
+     * 移動イベントを処理すべきかどうかを判定
+     */
+    private boolean shouldProcessMove(PlayerMoveEvent e) {
+        if (e.getTo() == null) {
+            return false;
+        }
+        
+        // 同じチャンク内の移動は無視
+        ChunkPosition currentPos = createChunkPosition(e.getTo().getChunk());
+        ChunkPosition lastPos = lastChunkPositions.get(e.getPlayer().getUniqueId());
+        
+        return !currentPos.equals(lastPos);
+    }
+    
+    /**
+     * プレイヤーの位置を更新
+     */
+    private void updatePlayerPosition(Player player, Chunk chunk) {
+        ChunkPosition currentPos = createChunkPosition(chunk);
+        lastChunkPositions.put(player.getUniqueId(), currentPos);
+    }
+    
+    /**
+     * チャンクを発見すべきかどうかを判定
+     */
+    private boolean shouldDiscoverChunk(Player player, Chunk chunk) {
+        // 既に発見済みなら無視
+        if (discoveryService.isDiscovered(player, chunk)) {
+            return false;
+        }
 
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent e) {
-        Player player = e.getPlayer();
+        // 岩盤じゃないので発見対象外(ENDは必ず失敗する)
+        if (!isValidChunkChunk(player)) {
+            return false;
+        }
 
-        // プレイヤーがログインした際に初期位置を記録
-        Chunk chunk = player.getLocation().getChunk();
-        ChunkPosition pos = new ChunkPosition(
+        // チャンクの岩盤チェック
+        return checkBedrockAtBottom(chunk);
+    }
+    
+    /**
+     * ChunkPositionオブジェクトを作成
+     */
+    private ChunkPosition createChunkPosition(Chunk chunk) {
+        return new ChunkPosition(
                 chunk.getWorld().getName(),
                 chunk.getX(),
                 chunk.getZ()
         );
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent e) {
+        Player player = e.getPlayer();
+        
+        // プレイヤーがログインした際に初期位置を記録
+        Chunk chunk = player.getLocation().getChunk();
+        ChunkPosition pos = createChunkPosition(chunk);
         lastChunkPositions.put(player.getUniqueId(), pos);
     }
 

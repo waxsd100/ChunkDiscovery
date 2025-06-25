@@ -5,6 +5,8 @@ import io.wax100.chunkDiscovery.manager.EffectManager;
 import io.wax100.chunkDiscovery.manager.RewardManager;
 import io.wax100.chunkDiscovery.manager.MilestoneConfig;
 import io.wax100.chunkDiscovery.model.RewardItem;
+import io.wax100.chunkDiscovery.util.ErrorHandler;
+import io.wax100.chunkDiscovery.util.Validate;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -21,12 +23,12 @@ public class RewardService {
     private final Set<Integer> triggeredGlobalMilestones = ConcurrentHashMap.newKeySet();
 
     public RewardService(ChunkDiscoveryPlugin plugin) {
-        this.plugin = plugin;
+        this.plugin = Validate.requireNonNull(plugin, "Plugin cannot be null");
         this.rewardManager = new RewardManager(plugin);
         try {
             this.rewardManager.loadMilestoneRewards();
         } catch (Exception e) {
-            plugin.getLogger().warning("報酬設定の読み込みに失敗しました: " + e.getMessage());
+            ErrorHandler.logError(e, plugin.getLogger(), "報酬設定の読み込み");
         }
     }
 
@@ -38,29 +40,47 @@ public class RewardService {
      * @param totalChunks 現在の発見総数
      */
     public void grantRewards(Player player, boolean globalFirst, boolean personalFirst, int totalChunks) {
+        Validate.requireNonNull(player, "Player cannot be null");
+        Validate.requireNonNegative(totalChunks, "Total chunks must be non-negative");
+        
         Bukkit.getScheduler().runTask(plugin, () -> {
             try {
                 if (globalFirst) {
-                    rewardManager.giveWorldFirstRewards(player);
-                    EffectManager.celebrateMilestone(player.getLocation());
-                    // 世界初発見メッセージ
-                    String message = ChatColor.WHITE + "" + ChatColor.BOLD + player.getName() + " さんが " + ChatColor.LIGHT_PURPLE + totalChunks + " 番目のチャンクを世界初発見！";
-                    Bukkit.getServer().broadcastMessage(message);
+                    grantWorldFirstRewards(player, totalChunks);
                 } else if (personalFirst) {
-                    rewardManager.givePersonalRewards(player);
-                    EffectManager.spawnFirework(player.getLocation());
-                    String message = ChatColor.GREEN + "" + ChatColor.BOLD + totalChunks + " チャンクを発見して報酬を受け取りました！";
-                    player.sendMessage(message);
+                    grantPersonalFirstRewards(player, totalChunks);
                 }
 
                 // 個人マイルストーンチェック
                 checkPersonalMilestones(player, totalChunks);
 
             } catch (Exception e) {
-                plugin.getLogger().severe("報酬付与中にエラーが発生しました: " + e.getMessage());
-                player.sendMessage(ChatColor.RED + "報酬の付与中にエラーが発生しました。");
+                ErrorHandler.handleAndNotify(e, plugin.getLogger(), player, "報酬付与");
             }
         });
+    }
+    
+    /**
+     * 世界初発見時の報酬付与
+     */
+    private void grantWorldFirstRewards(Player player, int totalChunks) {
+        rewardManager.giveWorldFirstRewards(player);
+        EffectManager.celebrateMilestone(player.getLocation());
+        
+        String message = ChatColor.WHITE + "" + ChatColor.BOLD + player.getName() + 
+                        " さんが " + ChatColor.LIGHT_PURPLE + totalChunks + " 番目のチャンクを世界初発見！";
+        Bukkit.getServer().broadcastMessage(message);
+    }
+    
+    /**
+     * 個人初発見時の報酬付与
+     */
+    private void grantPersonalFirstRewards(Player player, int totalChunks) {
+        rewardManager.givePersonalRewards(player);
+        EffectManager.spawnFirework(player.getLocation());
+        
+        String message = ChatColor.GREEN + "" + ChatColor.BOLD + totalChunks + " チャンクを発見して報酬を受け取りました！";
+        player.sendMessage(message);
     }
 
     /**
