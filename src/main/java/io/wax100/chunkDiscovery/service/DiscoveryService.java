@@ -69,14 +69,19 @@ public class DiscoveryService {
 
     private void processDiscoveryResult(Player player, DiscoveryResult result, String worldName) {
         try {
-            if (!result.personalFirst || result.playerData == null) {
+            // 個人発見または世界発見のどちらかがある場合のみ処理
+            if ((!result.personalFirst && !result.globalFirst) || result.playerData == null) {
                 return;
             }
 
             int totalGlobal = result.playerData.getTotalChunks();
             int totalInWorld = result.worldChunks;
 
-            updateWorldBorder(player, totalInWorld);
+            // 世界発見時のみWorldBorderを更新
+            if (result.globalFirst) {
+                updateWorldBorder(player, totalInWorld);
+            }
+            
             logDiscovery(player, worldName, totalGlobal, totalInWorld);
             grantRewards(player, result, totalGlobal);
 
@@ -100,10 +105,10 @@ public class DiscoveryService {
     }
 
     private void grantRewards(Player player, DiscoveryResult result, int totalGlobal) {
-        rewardService.grantRewards(player, result.globalFirst, true, totalGlobal);
+        rewardService.grantRewards(player, result.globalFirst, result.personalFirst, totalGlobal);
         
-        // グローバルマイルストーンは個人発見でもチェック（個人発見数の合計がサーバー全体の発見数に影響するため）
-        if (result.personalFirst) {
+        // グローバルマイルストーンは世界発見時のみチェック
+        if (result.globalFirst) {
             rewardService.checkGlobalMilestones(getTotalDiscoveredChunks());
         }
     }
