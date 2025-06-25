@@ -69,11 +69,13 @@ public class ConfigValidator {
     }
     
     private boolean isValidBorderSize(double size) {
-        return size >= 0 && size <= 60000000;
+        return size >= io.wax100.chunkDiscovery.Constants.Validation.MIN_BORDER_SIZE 
+            && size <= io.wax100.chunkDiscovery.Constants.Validation.MAX_BORDER_SIZE;
     }
     
     private boolean isValidExpansionRate(double rate) {
-        return rate >= 0 && rate <= 1000;
+        return rate >= io.wax100.chunkDiscovery.Constants.Validation.MIN_EXPANSION_PER_CHUNK 
+            && rate <= io.wax100.chunkDiscovery.Constants.Validation.MAX_EXPANSION_PER_CHUNK;
     }
     
     private boolean isValidHost(String host) {
@@ -81,7 +83,8 @@ public class ConfigValidator {
     }
     
     private boolean isValidPort(int port) {
-        return port >= 1 && port <= 65535;
+        return port >= io.wax100.chunkDiscovery.Constants.Validation.MIN_PORT 
+            && port <= io.wax100.chunkDiscovery.Constants.Validation.MAX_PORT;
     }
     
     private boolean isValidDatabaseName(String dbName) {
