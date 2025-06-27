@@ -54,7 +54,7 @@ public class AsyncUtils {
      * void処理の非同期実行
      * @param operation 実行する処理
      * @param errorHandler エラーハンドラー
-     * @return CompletableFuture<Void>
+     * @return CompletableFuture&lt;Void&gt;
      */
     public static CompletableFuture<Void> executeAsyncVoid(Runnable operation,
                                                            Consumer<Throwable> errorHandler) {
@@ -70,7 +70,7 @@ public class AsyncUtils {
      * @param operation 実行する処理
      * @param logger ログ出力用
      * @param operationName 操作名
-     * @return CompletableFuture<Void>
+     * @return CompletableFuture&lt;Void&gt;
      */
     public static CompletableFuture<Void> executeAsyncVoidWithLogging(Runnable operation,
                                                                       Logger logger,

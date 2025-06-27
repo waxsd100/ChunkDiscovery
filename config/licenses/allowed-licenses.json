@@ -1,0 +1,100 @@
+{
+  "allowedLicenses": [
+    {
+      "moduleLicense": "Apache License 2.0",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "Apache-2.0",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "The Apache Software License, Version 2.0",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "MIT License",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "MIT",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "The MIT License",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "BSD 3-Clause License",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "BSD-3-Clause",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "Eclipse Public License 1.0",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "Eclipse Public License 2.0",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "EPL-1.0",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "EPL-2.0",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "GNU Lesser General Public License v2.1 or later",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "LGPL-2.1-or-later",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "Common Development and Distribution License 1.0",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "CDDL-1.0",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "Common Public License Version 1.0",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    },
+    {
+      "moduleLicense": "CPL-1.0",
+      "moduleVersion": "*",
+      "moduleName": "*"
+    }
+  ],
+  "excludedModules": [
+    {
+      "moduleName": "io.wax100.*",
+      "moduleVersion": "*"
+    }
+  ]
+}
