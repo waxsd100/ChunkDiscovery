@@ -96,3 +96,13 @@ rewards:
         - type: HERO_OF_THE_VILLAGE
           duration: 6000  # 5分
           amplifier: 5
+
+# スポーン地点設定
+spawn:
+  # 安全な場所の検索半径（ブロック単位）
+  search_radius: 8
+  
+  # Nether専用設定
+  nether:
+    min_y: 64    # 最小検索Y座標
+    max_y: 96    # 最大検索Y座標

@@ -37,7 +37,12 @@ public class ChunkDiscoveryPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         try {
+            // WorldBorderConfigのクリーンアップ
+            WorldBorderConfig.cleanup();
+            
+            // データベースのシャットダウン
             DatabaseManager.shutdown();
+            
             getLogger().info("ChunkDiscoveryPlugin が正常に無効化されました。");
         } catch (Exception e) {
             getLogger().severe("プラグインの無効化中にエラーが発生しました: " + e.getMessage());
