@@ -115,10 +115,32 @@ jacocoTestCoverageVerification {
 }
 
 // OWASP Dependency Check設定
+// 使用方法: NVD_API_KEY環境変数を設定してから実行
+// export NVD_API_KEY=your_api_key_here
+// ./gradlew dependencyCheckAnalyze
+// APIキー取得: https://nvd.nist.gov/developers/request-an-api-key
 dependencyCheck {
     formats = ['HTML']
     failBuildOnCVSS = 9.0
     skipConfigurations = ['testImplementation', 'testRuntimeOnly', 'testCompileClasspath', 'testRuntimeClasspath']
+    suppressionFile = 'config/owasp/suppressions.xml'
+    
+    nvd {
+        apiKey = System.getenv('NVD_API_KEY')
+        delay = 16000
+    }
+}
+
+// NVD_API_KEYが設定されていない場合はタスクをスキップ
+tasks.named('dependencyCheckAnalyze').configure {
+    onlyIf {
+        def hasApiKey = System.getenv('NVD_API_KEY') != null
+        if (!hasApiKey) {
+            logger.warn("NVD_API_KEY環境変数が設定されていません。dependencyCheckAnalyzeタスクをスキップします。")
+            logger.warn("APIキー取得方法: https://nvd.nist.gov/developers/request-an-api-key")
+        }
+        return hasApiKey
+    }
 }
 
 // ライセンスレポート設定
