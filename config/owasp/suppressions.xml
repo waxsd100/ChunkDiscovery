@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <!-- 
+    OWASP Dependency Check Suppressions
+    
+    This file contains suppressions for known false positives or accepted risks.
+    Each suppression should include:
+    - gav: GroupId:ArtifactId:Version pattern
+    - cve: Specific CVE number (optional)
+    - notes: Reason for suppression
+    -->
+    
+    <!-- Example suppression for false positives
+    <suppress>
+        <notes><![CDATA[
+        False positive - this CVE doesn't apply to our usage
+        ]]></notes>
+        <gav regex="true">^com\.example:.*$</gav>
+        <cve>CVE-2023-12345</cve>
+    </suppress>
+    -->
+    
+    <!-- Suppress test-only dependencies -->
+    <suppress>
+        <notes><![CDATA[
+        Test dependencies are not included in production builds
+        ]]></notes>
+        <gav regex="true">^org\.junit\..*:.*$</gav>
+    </suppress>
+    
+    <suppress>
+        <notes><![CDATA[
+        Test dependencies are not included in production builds
+        ]]></notes>
+        <gav regex="true">^org\.mockito:.*$</gav>
+    </suppress>
+    
+    <suppress>
+        <notes><![CDATA[
+        Test dependencies are not included in production builds
+        ]]></notes>
+        <gav regex="true">^org\.testcontainers:.*$</gav>
+    </suppress>
+    
+    <suppress>
+        <notes><![CDATA[
+        H2 database is only used for testing
+        ]]></notes>
+        <gav regex="true">^com\.h2database:.*$</gav>
+    </suppress>
+</suppressions>
