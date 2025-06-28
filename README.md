@@ -4,7 +4,9 @@
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1+-brightgreen.svg)
 ![Spigot](https://img.shields.io/badge/Spigot-Paper%2FSpigot-yellow.svg)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
-![Tests](https://img.shields.io/badge/Tests-180+-green.svg)
+![Tests](https://img.shields.io/badge/Tests-Passing-green.svg)
+![Coverage](https://img.shields.io/badge/Coverage-36%25-yellow.svg)
+![CI](https://img.shields.io/badge/CI-GitHub%20Actions-blue.svg)
 
 MinecraftのPaper/Spigotサーバー用プラグインで、プレイヤーのチャンク探索に応じてワールドボーダーを動的に拡張し、包括的な報酬システムを提供します。
 
@@ -16,7 +18,23 @@ MinecraftのPaper/Spigotサーバー用プラグインで、プレイヤーの�
 - 🌐 **ワールド別設定**: オーバーワールド、ネザー、エンド個別設定
 - 💾 **MySQL統合**: 永続化とサーバー間データ共有
 - ⚡ **高パフォーマンス**: 非同期処理による軽量設計
-- 🧪 **高品質**: 180+のテストによる安定性保証
+- 🧪 **高品質**: 包括的なテストによる安定性保証
+- 🔒 **セキュリティ**: OWASP依存関係チェック統合
+- 📊 **品質管理**: Jacoco テストカバレッジ、ライセンス管理
+
+## 📦 ダウンロード
+
+### 最新版
+
+[**🚀 最新リリースをダウンロード**](https://github.com/waxsd100/ChunkDiscovery/releases/latest)
+
+### プレリリース版
+
+CI/CDパイプラインにより、master ブランチへのコミット毎に自動的にプレリリース版が生成されます。
+
+- ファイル名: `chunk-discovery-plugin-1.0-SNAPSHOT-all.jar`
+- 自動テスト実行済み
+- 最新の機能とバグ修正が含まれます
 
 ## 必要環境
 
@@ -25,15 +43,15 @@ MinecraftのPaper/Spigotサーバー用プラグインで、プレイヤーの�
 - **Java**: 17以降
 - **データベース**: MySQL 8.0以降
 
-## インストール
+## 🚀 インストール
 
-1. [Releases](https://github.com/username/ChunkDiscovery/releases)から最新のjarファイルをダウンロード
+1. [Releases](https://github.com/waxsd100/ChunkDiscovery/releases)から最新のjarファイルをダウンロード
 2. サーバーの`plugins`フォルダに配置
 3. サーバーを起動してプラグインを有効化
 4. 生成された`config.yml`を編集
 5. サーバーを再起動またはコマンドでリロード
 
-## 設定
+## ⚙️ 設定
 
 ### データベース設定
 
@@ -65,6 +83,13 @@ border:
     end:
       initial_size: 60000.0
       expansion_per_chunk: 2.0
+
+# スポーン地点設定
+spawn:
+  search_radius: 8
+  nether:
+    min_y: 64
+    max_y: 96
 ```
 
 ### 報酬設定
@@ -197,9 +222,9 @@ src/main/java/io/wax100/chunkDiscovery/
 - **非同期処理**: データベース操作の非同期化によるパフォーマンス最適化
 - **エラーハンドリング**: 包括的な例外処理とグレースフル・デグラデーション
 
-### データベーススキーマ
+## 💾 データベーススキーマ
 
-#### players テーブル
+### players テーブル
 プレイヤーの基本情報と総発見数
 
 ```sql
@@ -210,7 +235,7 @@ CREATE TABLE players (
 );
 ```
 
-#### global_chunks テーブル
+### global_chunks テーブル
 サーバー全体でのチャンク発見記録
 
 ```sql
@@ -224,7 +249,7 @@ CREATE TABLE global_chunks (
 );
 ```
 
-#### player_chunks テーブル
+### player_chunks テーブル
 プレイヤー個人のチャンク発見記録
 
 ```sql
@@ -238,7 +263,7 @@ CREATE TABLE player_chunks (
 );
 ```
 
-#### world_borders テーブル
+### world_borders テーブル
 ワールドボーダーの現在状態
 
 ```sql
@@ -252,37 +277,38 @@ CREATE TABLE world_borders (
 
 ## 🔧 開発情報
 
-### 🧪 テストカバレッジ
+### 🧪 品質管理
 
-プラグインは **180+ のテスト** により高い品質を保証しています：
+#### テストカバレッジ
+- **現在のカバレッジ**: 36%
+- **目標値**: 35%以上 ✅
+- **テスト実行**: CI/CD パイプラインで自動実行
 
-| テスト種別 | ファイル数 | テスト数 | カバレッジ |
-|-----------|----------|---------|-----------|
-| **Unit Tests** | 12 | 120+ | Core Logic |
-| **Integration Tests** | 5 | 35+ | Database Layer |
-| **Spigot Tests** | 4 | 59+ | Bukkit Integration |
-| **Service Tests** | 6 | 45+ | Business Logic |
+#### セキュリティチェック
+- **OWASP Dependency Check**: NVD API キー設定時に実行
+- **依存関係スキャン**: 既知の脆弱性チェック
+- **ライセンス管理**: 法的コンプライアンス確保
 
-#### テスト構造
+#### ライセンス管理
+- **許可ライセンス**: Apache 2.0, MIT, BSD 3-Clause, EPL 等
+- **自動レポート**: HTML, JSON, CSV 形式で生成
+- **コンプライアンス**: 全依存関係が許可ライセンス使用 ✅
 
-```
-src/test/java/io/wax100/chunkDiscovery/
-├── 🧪 Unit Tests
-│   ├── database/          # データベースレイヤー
-│   ├── manager/           # 管理クラス
-│   ├── model/             # データモデル
-│   └── util/              # ユーティリティ
-├── 🔗 Integration Tests
-│   ├── integration/       # 統合テスト
-│   └── initializer/       # 初期化テスト
-├── 🎮 Spigot Tests
-│   ├── commands/          # コマンドシステム
-│   ├── config/            # 設定管理
-│   ├── listener/          # イベントリスナー
-│   └── service/           # サービスレイヤー
-```
+### 🚀 CI/CD パイプライン
 
-### ビルドコマンド
+#### ワークフロー
+1. **Test & Build**
+   - テスト実行
+   - カバレッジ生成
+   - プラグインビルド
+   - アーティファクト作成
+
+2. **Release** (master ブランチのみ)
+   - GitHub リリース自動作成
+   - JARファイル配布
+   - タイムスタンプ付きタグ
+
+#### ビルドコマンド
 
 ```bash
 # フルビルド
@@ -291,11 +317,18 @@ src/test/java/io/wax100/chunkDiscovery/
 # テスト実行
 ./gradlew test
 
-# 特定のテストクラス実行
-./gradlew test --tests "RewardServiceTest"
+# テストカバレッジレポート生成
+./gradlew jacocoTestReport
 
-# テストレポート生成
-./gradlew test jacocoTestReport
+# ライセンスレポート生成
+./gradlew generateLicenseReport
+
+# OWASP依存関係チェック (NVD_API_KEY必要)
+export NVD_API_KEY=your_api_key_here
+./gradlew dependencyCheckAnalyze
+
+# Javadoc生成
+./gradlew javadoc
 
 # 開発用サーバー起動
 ./gradlew runServer
@@ -304,27 +337,33 @@ src/test/java/io/wax100/chunkDiscovery/
 ./gradlew shadowJar
 ```
 
-### 依存関係
+### 📦 依存関係
 
 #### 実行時依存関係
 - **Paper API**: 1.20.1-R0.1-SNAPSHOT
 - **HikariCP**: 5.0.1（高性能コネクションプール）
 - **MySQL Connector**: 8.0.33（データベースドライバ）
 
-#### テスト依存関係
+#### 開発・テスト依存関係
 - **JUnit Jupiter**: 5.10.0（テストフレームワーク）
 - **Mockito**: 5.6.0（モックフレームワーク）
 - **Testcontainers**: 1.19.3（統合テスト用）
 - **H2 Database**: 2.2.224（インメモリテスト用）
 
-## パフォーマンス
+#### 品質管理ツール
+- **Jacoco**: テストカバレッジ測定
+- **OWASP Dependency Check**: セキュリティスキャン
+- **License Report Plugin**: ライセンス管理
+
+## ⚡ パフォーマンス
 
 - **非同期処理**: データベース操作は全て非同期で実行
 - **コネクションプール**: HikariCPによる効率的なDB接続管理
 - **インデックス最適化**: 頻繁なクエリに対する適切なインデックス設定
 - **メモリ効率**: 不要なデータのキャッシュを避けた軽量設計
+- **スレッドセーフ**: 適切な並行処理制御
 
-## トラブルシューティング
+## 🔍 トラブルシューティング
 
 ### データベース接続エラー
 
@@ -339,19 +378,50 @@ src/test/java/io/wax100/chunkDiscovery/
 2. データベース接続が正常か確認
 3. コンソールでエラーログを確認
 
-## ライセンス
+### スポーン地点の問題
+
+1. `config.yml` でスポーン設定を確認
+2. ワールドボーダーの中心が (0,0) に設定されているか確認
+3. ネザーでの Y座標範囲設定を確認
+
+## 📄 ライセンス
 
 MIT License
 
-## 作者
+## 👨‍💻 作者
 
 wakokara
 
-## 貢献
+## 🤝 貢献
 
 プルリクエストやイシューの報告を歓迎します。
 
+### 開発環境セットアップ
+
+1. Java 17+ をインストール
+2. リポジトリをクローン: `git clone https://github.com/waxsd100/ChunkDiscovery.git`
+3. 依存関係のダウンロード: `./gradlew build`
+4. テスト実行: `./gradlew test`
+
 ## 📝 更新履歴
+
+### v1.0-SNAPSHOT (最新)
+- **CI/CDパイプライン統合**
+  - GitHub Actions による自動テスト・ビルド・リリース
+  - Jacoco テストカバレッジ (36%)
+  - OWASP 依存関係セキュリティチェック
+  - ライセンスコンプライアンス管理
+  - 自動 Javadoc 生成
+- **スポーン地点修正**
+  - ワールドボーダー中心へのスポーン地点設定
+  - オーバーワールド・ネザー両対応
+  - 非同期処理による安全なスポーン検索
+  - 設定可能な検索範囲とY座標制限
+- **品質・保守性向上**
+  - Clean Architecture の徹底
+  - 包括的なエラーハンドリング
+  - スレッドセーフティの確保
+  - NPE対策の強化
 
 ### v1.1.0 (2024-12-25) 🎄
 - **RewardServiceの大幅リファクタリング**
