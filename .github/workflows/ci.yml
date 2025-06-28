@@ -1,44 +1,22 @@
-name: 🚀 Continuous Integration
+name: 🚀 CI/CD Pipeline
 
 on:
   push:
-    branches: [ master, main, develop ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.gitignore'
+    branches: [ master, main ]
   pull_request:
-    branches: [ master, main, develop ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.gitignore'
+    branches: [ master, main ]
 
 env:
-  GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2'
-  GRADLE_USER_HOME: ${{ github.workspace }}/.gradle
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  GRADLE_OPTS: '-Dorg.gradle.daemon=false'
 
 jobs:
-  # ==========================================
-  # Code Quality & Security Analysis
-  # ==========================================
-  code-quality:
-    name: 🔍 Code Quality Analysis
+  test-and-build:
+    name: 🧪 Test & Build
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      actions: read
-      contents: read
-
+    
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: ☕ Set up JDK 17
         uses: actions/setup-java@v4
@@ -48,331 +26,73 @@ jobs:
 
       - name: 📦 Setup Gradle
         uses: gradle/gradle-build-action@v2
-        with:
-          gradle-home-cache-cleanup: true
 
-      - name: 🔍 Run SpotBugs Analysis
-        run: ./gradlew spotbugsMain spotbugsTest
-        continue-on-error: true
+      - name: 🧪 Run Tests
+        run: ./gradlew test
 
-      - name: 📊 Run Checkstyle
-        run: ./gradlew checkstyleMain checkstyleTest
-        continue-on-error: true
-
-      - name: 🔒 Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: java
-
-      - name: 🏗️ Autobuild for CodeQL
-        uses: github/codeql-action/autobuild@v3
-
-      - name: 🔍 Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-
-      - name: 📤 Upload SpotBugs reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: spotbugs-reports
-          path: |
-            build/reports/spotbugs/
-          retention-days: 30
-
-  # ==========================================
-  # Multi-Platform Testing Matrix
-  # ==========================================
-  test:
-    name: 🧪 Test Suite
-    runs-on: ${{ matrix.os }}
-    needs: code-quality
-    
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-        java: [ '17', '21' ]
-        include:
-          - os: ubuntu-latest
-            java: '17'
-            primary: true
-
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-
-      - name: ☕ Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ matrix.java }}
-          distribution: 'temurin'
-
-      - name: 📦 Setup Gradle
-        uses: gradle/gradle-build-action@v2
-
-      - name: 🗄️ Setup MySQL (Ubuntu only)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo systemctl start mysql.service
-          mysql -e "CREATE DATABASE minecraft_chunks_test;" -uroot -proot
-          mysql -e "CREATE USER 'test_user'@'localhost' IDENTIFIED BY 'test_password';" -uroot -proot
-          mysql -e "GRANT ALL PRIVILEGES ON minecraft_chunks_test.* TO 'test_user'@'localhost';" -uroot -proot
-
-      - name: 🧪 Run Unit Tests
-        run: ./gradlew test --continue
-        env:
-          SPRING_PROFILES_ACTIVE: test
-
-      - name: 🔗 Run Integration Tests
-        if: matrix.os == 'ubuntu-latest'
-        run: ./gradlew integrationTest --continue
-        env:
-          DB_HOST: localhost
-          DB_PORT: 3306
-          DB_NAME: minecraft_chunks_test
-          DB_USER: test_user
-          DB_PASS: test_password
-
-      - name: 📊 Generate Test Report
-        uses: dorny/test-reporter@v1
-        if: success() || failure()
-        with:
-          name: 📋 Test Results (${{ matrix.os }}, Java ${{ matrix.java }})
-          path: build/test-results/**/*.xml
-          reporter: java-junit
-
-      - name: 📈 Generate Coverage Report (Primary)
-        if: matrix.primary
+      - name: 📊 Generate Test Coverage
         run: ./gradlew jacocoTestReport
 
-      - name: 📤 Upload Coverage to Codecov
-        if: matrix.primary
-        uses: codecov/codecov-action@v3
-        with:
-          file: build/reports/jacoco/test/jacocoTestReport.xml
-          flags: unittests
-          name: codecov-umbrella
+      - name: 🏗️ Build Plugin
+        run: ./gradlew build shadowJar
 
-      - name: 📦 Upload Test Artifacts
+      - name: 📋 Generate Build Info
+        run: |
+          VERSION=$(./gradlew properties -q | grep "version:" | awk '{print $2}')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "## 🏗️ Build Information" > build-info.md
+          echo "- **Version:** $VERSION" >> build-info.md
+          echo "- **Build Date:** $(date -u)" >> build-info.md
+          echo "- **Commit:** ${{ github.sha }}" >> build-info.md
+
+      - name: 📦 Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChunkDiscovery-${{ env.VERSION }}
+          path: |
+            build/libs/*-all.jar
+            build-info.md
+          retention-days: 90
+
+      - name: 📊 Upload Test Reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results-${{ matrix.os }}-java${{ matrix.java }}
+          name: test-reports
           path: |
             build/test-results/
             build/reports/tests/
             build/reports/jacoco/
           retention-days: 30
 
-  # ==========================================
-  # Performance & Compatibility Testing
-  # ==========================================
-  performance:
-    name: ⚡ Performance Testing
+  release:
+    name: 🚀 Release
     runs-on: ubuntu-latest
-    needs: test
+    needs: test-and-build
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-
+    
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: ☕ Set up JDK 17
-        uses: actions/setup-java@v4
+      - name: 📦 Download Artifacts
+        uses: actions/download-artifact@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          pattern: ChunkDiscovery-*
+          merge-multiple: true
 
-      - name: 📦 Setup Gradle
-        uses: gradle/gradle-build-action@v2
-
-      - name: 🚀 Run Performance Tests
-        run: ./gradlew performanceTest
-        continue-on-error: true
-
-      - name: 📊 Performance Benchmarks
-        run: |
-          echo "## 📊 Performance Metrics" >> $GITHUB_STEP_SUMMARY
-          echo "| Metric | Value | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Build Time | $(date) | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| Test Coverage | 85%+ | ✅ |" >> $GITHUB_STEP_SUMMARY
-
-  # ==========================================
-  # Build & Package
-  # ==========================================
-  build:
-    name: 🏗️ Build & Package
-    runs-on: ubuntu-latest
-    needs: [ test, code-quality ]
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-      artifact-name: ${{ steps.artifact.outputs.name }}
-
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-
-      - name: ☕ Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: 📦 Setup Gradle
-        uses: gradle/gradle-build-action@v2
-
-      - name: 🔢 Extract version
-        id: version
+      - name: 📋 Get Version
         run: |
           VERSION=$(./gradlew properties -q | grep "version:" | awk '{print $2}')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "📦 Building version: $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: 🏗️ Build with Gradle
-        run: ./gradlew build shadowJar --build-cache
-
-      - name: 📋 Generate Build Info
-        run: |
-          echo "## 🏗️ Build Information" >> build-info.md
-          echo "- **Version:** ${{ steps.version.outputs.version }}" >> build-info.md
-          echo "- **Build Date:** $(date -u)" >> build-info.md
-          echo "- **Commit:** ${{ github.sha }}" >> build-info.md
-          echo "- **Java Version:** $(java -version 2>&1 | head -n 1)" >> build-info.md
-          echo "- **Gradle Version:** $(./gradlew --version | grep Gradle | head -n 1)" >> build-info.md
-
-      - name: 🏷️ Set artifact name
-        id: artifact
-        run: |
-          ARTIFACT_NAME="ChunkDiscovery-${{ steps.version.outputs.version }}"
-          echo "name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
-
-      - name: 📦 Upload Build Artifacts
-        uses: actions/upload-artifact@v4
+      - name: 🏷️ Create Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: ${{ steps.artifact.outputs.name }}
-          path: |
+          tag_name: v${{ env.VERSION }}
+          name: ChunkDiscovery v${{ env.VERSION }}
+          body_path: build-info.md
+          files: |
             build/libs/*-all.jar
-            build-info.md
-          retention-days: 90
-
-      - name: 📦 Upload Additional Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-reports
-          path: |
-            build/reports/
-            build/docs/
-          retention-days: 30
-
-  # ==========================================
-  # Documentation Generation
-  # ==========================================
-  docs:
-    name: 📚 Generate Documentation
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-
-      - name: ☕ Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: 📦 Setup Gradle
-        uses: gradle/gradle-build-action@v2
-
-      - name: 📖 Generate Javadoc
-        run: ./gradlew javadoc
-
-      - name: 🌐 Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: build/docs/javadoc
-          destination_dir: javadoc
-
-      - name: 📊 Generate Test Coverage Badge
-        run: |
-          echo "Coverage: 85%" > coverage.txt
-
-  # ==========================================
-  # Dependency Security Scan
-  # ==========================================
-  security:
-    name: 🔒 Security Scan
-    runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      security-events: write
-
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-
-      - name: ☕ Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: 📦 Setup Gradle
-        uses: gradle/gradle-build-action@v2
-
-      - name: 🔍 Run OWASP Dependency Check
-        run: ./gradlew dependencyCheckAnalyze
-        continue-on-error: true
-
-      - name: 📤 Upload Security Report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: security-reports
-          path: build/reports/dependency-check-report.html
-          retention-days: 30
-
-  # ==========================================
-  # Notification & Summary
-  # ==========================================
-  summary:
-    name: 📊 Pipeline Summary
-    runs-on: ubuntu-latest
-    needs: [ test, build, docs, security ]
-    if: always()
-
-    steps:
-      - name: 📊 Generate Summary
-        run: |
-          echo "# 🚀 CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 📋 Job Status" >> $GITHUB_STEP_SUMMARY
-          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Code Quality | ${{ needs.code-quality.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests | ${{ needs.test.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build | ${{ needs.build.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Documentation | ${{ needs.docs.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security | ${{ needs.security.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 🎯 Quick Stats" >> $GITHUB_STEP_SUMMARY
-          echo "- **Build Time:** $(date -u)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-
-      - name: 🔔 Discord Notification
-        if: always() && github.event_name == 'push'
-        uses: sarisia/actions-status-discord@v1
-        with:
-          webhook: ${{ secrets.DISCORD_WEBHOOK }}
-          status: ${{ job.status }}
-          title: "ChunkDiscovery CI Pipeline"
-          description: |
-            **Branch:** ${{ github.ref_name }}
-            **Commit:** ${{ github.sha }}
-            **Author:** ${{ github.actor }}
-          color: ${{ job.status == 'success' && '0x00ff00' || '0xff0000' }}
+          draft: false
+          prerelease: false
