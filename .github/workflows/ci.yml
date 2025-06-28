@@ -93,10 +93,14 @@ jobs:
           path: artifacts/
           merge-multiple: true
 
-      - name: 📋 Get Version
+      - name: 📋 Get Version and Timestamp
         run: |
           VERSION=$(./gradlew properties -q | grep "version:" | awk '{print $2}')
+          TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+          RELEASE_TAG="v${VERSION}-${TIMESTAMP}"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
+          echo "Building release: $RELEASE_TAG"
 
       - name: 🔍 List Downloaded Files
         run: |
@@ -107,10 +111,24 @@ jobs:
       - name: 🏷️ Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ env.VERSION }}
-          name: ChunkDiscovery v${{ env.VERSION }}
-          body_path: artifacts/build-info.md
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ChunkDiscovery ${{ env.VERSION }} (Build ${{ github.run_number }})
+          body: |
+            ## 🚀 ChunkDiscovery Release
+            
+            **Version:** ${{ env.VERSION }}  
+            **Build:** #${{ github.run_number }}  
+            **Commit:** ${{ github.sha }}  
+            **Date:** $(date -u)
+            
+            ### 📦 Downloads
+            - `chunk-discovery-plugin-${{ env.VERSION }}-all.jar` - Main plugin file
+            
+            ### 🔧 Installation
+            1. Download the JAR file
+            2. Place it in your server's `plugins/` directory
+            3. Restart your server
           files: artifacts/*.jar
           draft: false
-          prerelease: false
+          prerelease: true
           token: ${{ secrets.GITHUB_TOKEN }}
