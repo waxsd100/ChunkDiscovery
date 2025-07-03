@@ -4,6 +4,7 @@ import io.wax100.chunkDiscovery.ChunkDiscoveryPlugin;
 import io.wax100.chunkDiscovery.database.WorldBorderRepository;
 import io.wax100.chunkDiscovery.database.DatabaseManager;
 import org.bukkit.World;
+import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.HashMap;
@@ -91,16 +92,20 @@ public class WorldBorderConfig {
                 String worldName = world.getName();
                 Double savedSize = savedBorders.get(worldName);
 
+                // スポーン地点を取得してボーダーの中心に設定
+                Location spawnLocation = world.getSpawnLocation();
+                world.getWorldBorder().setCenter(spawnLocation.getX(), spawnLocation.getZ());
+                
                 if (savedSize != null) {
                     // 保存されたサイズがある場合は復元
                     world.getWorldBorder().setSize(savedSize);
-                    plugin.getLogger().info("ワールド " + worldName + " のボーダーサイズを復元しました: " + savedSize);
+                    plugin.getLogger().info("ワールド " + worldName + " のボーダーサイズを復元しました: " + savedSize + " (中心: " + spawnLocation.getX() + ", " + spawnLocation.getZ() + ")");
                 } else {
                     // 保存されたサイズがない場合は初期サイズを設定してDBに保存
                     WorldBorderSetting setting = getSettingForWorld(worldName);
                     world.getWorldBorder().setSize(setting.initialSize());
                     borderRepository.initializeBorderIfAbsent(worldName, setting.initialSize());
-                    plugin.getLogger().info("ワールド " + worldName + " のボーダーサイズを初期化しました: " + setting.initialSize());
+                    plugin.getLogger().info("ワールド " + worldName + " のボーダーサイズを初期化しました: " + setting.initialSize() + " (中心: " + spawnLocation.getX() + ", " + spawnLocation.getZ() + ")");
                 }
             }
         } catch (Exception e) {
@@ -115,9 +120,13 @@ public class WorldBorderConfig {
      */
     private static void applyInitialBorders() {
         for (World world : plugin.getServer().getWorlds()) {
+            // スポーン地点を取得してボーダーの中心に設定
+            Location spawnLocation = world.getSpawnLocation();
+            world.getWorldBorder().setCenter(spawnLocation.getX(), spawnLocation.getZ());
+            
             WorldBorderSetting setting = getSettingForWorld(world.getName());
             world.getWorldBorder().setSize(setting.initialSize());
-            plugin.getLogger().info("ワールド " + world.getName() + " のボーダーサイズを設定ファイルから設定しました: " + setting.initialSize());
+            plugin.getLogger().info("ワールド " + world.getName() + " のボーダーサイズを設定ファイルから設定しました: " + setting.initialSize() + " (中心: " + spawnLocation.getX() + ", " + spawnLocation.getZ() + ")");
         }
     }
 
