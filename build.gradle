@@ -76,7 +76,7 @@ shadowJar {
     exclude 'META-INF/*.RSA'
 
     // JARファイル名の最終設定
-    archiveBaseName = 'chunk-discovery-plugin'
+    archiveBaseName = 'ChunkDiscovery'
     archiveVersion = project.version.toString()
 }
 
